@@ -12,6 +12,88 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  Ejemplos realistas que se muestran en Swagger (el "Example Value" del 200).
+#  Son valores ILUSTRATIVOS, no datos reales; sirven para ver la forma de la
+#  respuesta con contenido legible en vez de "string"/0.
+# ─────────────────────────────────────────────────────────────────────────────
+_SKU_EXAMPLE = {
+    "sku": "001234-05-M",
+    "fldIdArticulo": "001234",
+    "articulo_descripcion": "Camiseta manga corta",
+    "fldTemporada": "V25",
+    "fldIdFamilia": "CAM",
+    "fldIdProveedor": "PROV012",
+    "fldReferencia": "REF-55120",
+    "fldColeccion": "Primavera-Verano 2025",
+    "fldMinimoStock": 5,
+    "fldMaximoStock": 50,
+    "fldPuntoPedido": 10,
+    "fldIdMarca": "BYC",
+    "fldIdSexo": "H",
+    "fldIdGrupo": "G01",
+    "fldIdSubgrupo": "SG03",
+    "fldIdSubfamilia": "SF07",
+    "fldIdTemporadaVenta": "V25",
+    "fldIdColor": "05",
+    "color_descripcion": "Azul marino",
+    "fldIdGrupoTallas": "GT1",
+    "grupotalla_descripcion": "Tallas S-XXL",
+    "talla": "M",
+    "total_entradas": 120,
+    "total_salidas": 97,
+    "total_servicio": 0,
+    "total_transito": 0,
+    "stock_disponible": 23,
+    "num_almacenes": 3,
+    "actualizado_en": "2025-10-14T02:11:00",
+}
+
+_TICKET_EXAMPLE = {
+    "fldIdEmpresa": "0001",
+    "fldIdAlmacen": "00000207",
+    "fldIdCaja": "000001",
+    "fldIdTicket": "2072056051",
+    "fldLinea": "0001",
+    "fecha": "2025-07-14",
+    "fldHora": "19:26:44",
+    "fldIdCliente": "00000001",
+    "fldIdOperario": "00010",
+    "fldIdCajera": "00010",
+    "fldPrendas": 2,
+    "fldImporteBruto": 59.90,
+    "fldImporteDto": 0,
+    "fldImporteNeto": 59.90,
+    "fldCobradoTicket": 59.90,
+    "fldPteTicket": 0,
+    "fldIdMoneda": "EUR",
+    "fldCambio": 1,
+    "dto_cabecera": 0,
+    "id_cierre": "C20250714",
+    "fldVales": 0,
+    "fldApartados": 0,
+    "fldArreglos": 0,
+    "fldPromociones": 0,
+    "fldChequeRegalo": 0,
+    "fldCupones": 0,
+    "fldEspecial": 0,
+    "fldIdVale": "",
+    "fldIdArticulo": "001234",
+    "fldIdColor": "05",
+    "fldTalla": "M",
+    "sku": "001234-05-M",
+    "fldCantidad": 1,
+    "fldPrecio": 29.95,
+    "dto_linea": 0,
+    "importe_linea": 29.95,
+    "fldIdPromocion": "",
+    "fldIdPromoCat": "",
+    "fldIVA": 21,
+    "fldVentaReal": 1,
+    "fldIdRebaja": "",
+    "actualizado_en": "2025-07-14T23:00:00",
+}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  SKU — catálogo de artículos a nivel artículo-color-talla
@@ -19,7 +101,10 @@ from pydantic import BaseModel, ConfigDict, Field
 class SkuOut(BaseModel):
     """Una referencia del catálogo (grano: artículo + color + talla)."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": _SKU_EXAMPLE},
+    )
 
     sku: str | None = Field(None, description="Código único de SKU (artículo-color-talla).")
     fldIdArticulo: str | None = Field(None, description="Código de artículo.")
@@ -55,6 +140,12 @@ class SkuOut(BaseModel):
 class SkuPage(BaseModel):
     """Página de resultados de SKU."""
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"items": [_SKU_EXAMPLE], "count": 1, "limit": 50, "offset": 0}
+        }
+    )
+
     items: list[SkuOut]
     count: int = Field(..., description="Nº de filas devueltas en esta página.")
     limit: int = Field(..., description="Tamaño de página solicitado.")
@@ -67,7 +158,10 @@ class SkuPage(BaseModel):
 class TicketLineaOut(BaseModel):
     """Una línea de ticket de venta."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": _TICKET_EXAMPLE},
+    )
 
     # ── Cabecera del ticket ──────────────────────────────────────────────────
     fldIdEmpresa: str | None = Field(None, description="Código de empresa.")
@@ -117,6 +211,12 @@ class TicketLineaOut(BaseModel):
 
 class TicketPage(BaseModel):
     """Página de resultados de líneas de ticket."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"items": [_TICKET_EXAMPLE], "count": 1, "limit": 50, "offset": 0}
+        }
+    )
 
     items: list[TicketLineaOut]
     count: int = Field(..., description="Nº de filas devueltas en esta página.")
