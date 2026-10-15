@@ -14,7 +14,7 @@ from sqlalchemy import text
 
 from db import engine
 from schemas import TicketLineaOut, TicketPage
-from security import limiter, require_api_key
+from security import RATE_LIMIT_RESPONSE, limiter, require_api_key
 from settings import settings
 
 router = APIRouter(prefix="/api/ventas", tags=["Ventas — líneas de ticket"])
@@ -27,6 +27,7 @@ router = APIRouter(prefix="/api/ventas", tags=["Ventas — líneas de ticket"])
     description="Lista paginada de líneas de ticket, con filtros opcionales por "
     "rango de fechas, almacén, ticket, SKU y cliente. Ordena por fecha "
     "descendente.",
+    responses=RATE_LIMIT_RESPONSE,
 )
 @limiter.limit(settings.rate_limit)
 async def list_ventas(
@@ -80,7 +81,7 @@ async def list_ventas(
     summary="Líneas de un ticket",
     description="Devuelve todas las líneas de un ticket identificado por su "
     "clave natural (empresa, almacén, caja, ticket), ordenadas por línea.",
-    responses={404: {"description": "Ticket sin líneas"}},
+    responses={404: {"description": "Ticket sin líneas"}, **RATE_LIMIT_RESPONSE},
 )
 @limiter.limit(settings.rate_limit)
 async def get_ticket(

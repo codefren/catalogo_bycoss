@@ -36,8 +36,13 @@ app = FastAPI(
     version="1.1.0",
     description=(
         "Consulta de **solo lectura** del catálogo (SKUs y ventas).\n\n"
-        "Autentícate enviando tu clave en la cabecera `X-API-Key`. "
-        "En Swagger, usa el botón **Authorize** (arriba a la derecha)."
+        "**Autenticación:** envía tu clave en la cabecera `X-API-Key`. "
+        "En Swagger, usa el botón **Authorize** (arriba a la derecha).\n\n"
+        f"**Límite de peticiones (rate limiting):** máximo **{settings.rate_limit}** "
+        "por IP, compartido por todos los endpoints `/api/*`. Al superarlo, la API "
+        "responde `429 Too Many Requests`. El valor se configura con la variable "
+        "de entorno `RATE_LIMIT` (formato de slowapi, p. ej. `60/minute`, "
+        "`1/second`, `1000/hour`)."
     ),
     openapi_tags=tags_metadata,
     contact={"name": "Soporte catálogo", "email": "efrenoscar6@gmail.com"},

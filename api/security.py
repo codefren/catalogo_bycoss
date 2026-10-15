@@ -16,6 +16,12 @@ from settings import settings
 # (app.state.limiter = limiter).
 limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit])
 
+# Respuesta 429 documentada en Swagger para los endpoints con rate limit.
+# Se añade a `responses=` de cada endpoint de datos.
+RATE_LIMIT_RESPONSE = {
+    429: {"description": f"Límite de peticiones superado ({settings.rate_limit} por IP)."}
+}
+
 # Cabecera donde el tercero manda su clave.
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 

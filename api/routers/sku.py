@@ -12,7 +12,7 @@ from sqlalchemy import text
 
 from db import engine
 from schemas import SkuOut, SkuPage
-from security import limiter, require_api_key
+from security import RATE_LIMIT_RESPONSE, limiter, require_api_key
 from settings import settings
 
 router = APIRouter(prefix="/api/skus", tags=["SKU — catálogo"])
@@ -25,6 +25,7 @@ router = APIRouter(prefix="/api/skus", tags=["SKU — catálogo"])
     description="Lista paginada del catálogo, con filtros opcionales por "
     "temporada, familia, proveedor, marca, color, talla y texto en la "
     "descripción. Ordena por código de SKU.",
+    responses=RATE_LIMIT_RESPONSE,
 )
 @limiter.limit(settings.rate_limit)
 async def list_skus(
@@ -84,7 +85,7 @@ async def list_skus(
     response_model=SkuOut,
     summary="Obtener un SKU",
     description="Devuelve una referencia concreta por su código de SKU.",
-    responses={404: {"description": "SKU no encontrado"}},
+    responses={404: {"description": "SKU no encontrado"}, **RATE_LIMIT_RESPONSE},
 )
 @limiter.limit(settings.rate_limit)
 async def get_sku(
