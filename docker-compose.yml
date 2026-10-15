@@ -1,0 +1,99 @@
+# =============================================================================
+#  Catálogo de datos — PostgreSQL para consultar/actualizar desde Databricks.
+#
+#  Stack independiente (no tiene que ver con TimeShift). Una sola DB, pensada
+#  para ~250k filas en 2 tablas. Databricks se conecta por JDBC al IP:puerto
+#  público de este servidor (igual que ya haces con el SQL Server de Arsys).
+#
+#  Uso:
+#    cp .env.example .env            # y pon una contraseña fuerte
+#    docker compose up -d
+#    docker compose logs -f postgres
+#
+#  OJO: los .sql de ./initdb SOLO se aplican la PRIMERA vez (volumen vacío).
+#  Si cambias el esquema después, aplícalo a mano con psql.
+# =============================================================================
+
+name: catalogo-db
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: databricks-catalog-db
+    env_file: .env
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-catalogo}"
+      POSTGRES_USER: "${POSTGRES_USER:-catalogo}"
+      # El :? hace que compose falle si no defines la contraseña en .env.
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}"
+      # scram-sha-256: hashing moderno para las conexiones remotas.
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      # Este es el puerto que verá Databricks. Cámbialo en .env si quieres uno
+      # no estándar (recomendado si lo expones a internet).
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - catalogo-data:/var/lib/postgresql/data
+      # Scripts de esquema/seed: se ejecutan en orden alfabético SOLO al crear
+      # la base por primera vez (cuando el volumen está vacío).
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    command:
+      - "postgres"
+      # Ajustes holgados de sobra para 250k filas.
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "work_mem=16MB"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-catalogo} -d ${POSTGRES_DB:-catalogo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks: [catalogo-net]
+
+  # ── API FastAPI de solo lectura para terceros (detrás de Caddy) ────────────
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: databricks-catalog-api:local
+    container_name: databricks-catalog-api
+    env_file: .env
+    environment:
+      # La API habla con Postgres por la red privada (nombre del servicio).
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-catalogo}:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}@postgres:5432/${POSTGRES_DB:-catalogo}"
+      API_KEYS: "${API_KEYS:?define API_KEYS en .env}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-}"
+      RATE_LIMIT: "${RATE_LIMIT:-60/minute}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    # catalogo-net: para llegar a Postgres.  edge: para que Caddy la alcance.
+    networks: [catalogo-net, edge]
+    # Sin "ports": Caddy la publica en 443. Para probar en local, descomenta:
+    # ports:
+    #   - "8000:8000"
+
+volumes:
+  catalogo-data:
+
+networks:
+  # Red privada API <-> Postgres (este stack).
+  catalogo-net:
+    driver: bridge
+  # Red compartida con el stack del reverse proxy (Caddy). Créala una vez:
+  #   docker network create edge
+  # y añade `edge` a las redes del servicio caddy en su compose.
+  edge:
+    external: true
