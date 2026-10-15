@@ -66,9 +66,11 @@ services:
     environment:
       # La API habla con Postgres por la red privada (nombre del servicio).
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-catalogo}:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}@postgres:5432/${POSTGRES_DB:-catalogo}"
-      API_KEYS: "${API_KEYS:?define API_KEYS en .env}"
       CORS_ORIGINS: "${CORS_ORIGINS:-}"
       RATE_LIMIT: "${RATE_LIMIT:-60/minute}"
+      # Firma de los JWT (obligatorio) y caducidad del token.
+      JWT_SECRET: "${JWT_SECRET:?define JWT_SECRET en .env}"
+      ACCESS_TOKEN_EXPIRE_HOURS: "${ACCESS_TOKEN_EXPIRE_HOURS:-12}"
     depends_on:
       postgres:
         condition: service_healthy

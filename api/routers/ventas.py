@@ -14,7 +14,7 @@ from sqlalchemy import text
 
 from db import engine
 from schemas import TicketLineaOut, TicketPage
-from security import RATE_LIMIT_RESPONSE, limiter, require_api_key
+from security import RATE_LIMIT_RESPONSE, limiter, require_jwt
 from settings import settings
 
 router = APIRouter(prefix="/api/ventas", tags=["Ventas — líneas de ticket"])
@@ -40,7 +40,7 @@ async def list_ventas(
     ticket: str | None = Query(None, max_length=50, description="Filtra por fldIdTicket."),
     sku: str | None = Query(None, max_length=100, description="Filtra por SKU vendido."),
     cliente: str | None = Query(None, max_length=50, description="Filtra por fldIdCliente."),
-    _: str = Depends(require_api_key),
+    _: dict = Depends(require_jwt),
 ):
     where: list[str] = []
     params: dict = {}
@@ -90,7 +90,7 @@ async def get_ticket(
     almacen: str,
     caja: str,
     ticket: str,
-    _: str = Depends(require_api_key),
+    _: dict = Depends(require_jwt),
 ):
     sql = (
         "SELECT * FROM ticket_maestro "

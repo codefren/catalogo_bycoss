@@ -8,9 +8,6 @@ class Settings(BaseSettings):
     # postgresql+asyncpg://usuario:pass@postgres:5432/catalogo
     database_url: str
 
-    # Claves de API válidas, separadas por coma. Cada tercero usa la suya.
-    api_keys: str = ""
-
     # Orígenes permitidos para CORS, separados por coma (nunca "*" en prod).
     cors_origins: str = ""
 
@@ -27,10 +24,6 @@ class Settings(BaseSettings):
 
     # Caducidad del token de acceso, en horas.
     access_token_expire_hours: int = 12
-
-    @property
-    def api_key_set(self) -> set[str]:
-        return {k.strip() for k in self.api_keys.split(",") if k.strip()}
 
     @property
     def cors_list(self) -> list[str]:

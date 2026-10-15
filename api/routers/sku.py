@@ -12,7 +12,7 @@ from sqlalchemy import text
 
 from db import engine
 from schemas import SkuOut, SkuPage
-from security import RATE_LIMIT_RESPONSE, limiter, require_api_key
+from security import RATE_LIMIT_RESPONSE, limiter, require_jwt
 from settings import settings
 
 router = APIRouter(prefix="/api/skus", tags=["SKU — catálogo"])
@@ -40,7 +40,7 @@ async def list_skus(
     color: str | None = Query(None, max_length=50, description="Filtra por fldIdColor."),
     talla: str | None = Query(None, max_length=50, description="Filtra por talla."),
     con_stock: bool = Query(False, description="Si es true, solo SKUs con stock_disponible > 0."),
-    _: str = Depends(require_api_key),
+    _: dict = Depends(require_jwt),
 ):
     where: list[str] = []
     params: dict = {}
@@ -91,7 +91,7 @@ async def list_skus(
 async def get_sku(
     request: Request,
     sku: str,
-    _: str = Depends(require_api_key),
+    _: dict = Depends(require_jwt),
 ):
     async with engine.connect() as conn:
         row = (

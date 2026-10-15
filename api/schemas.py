@@ -12,6 +12,27 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Autenticación — respuesta de /auth/token
+# ─────────────────────────────────────────────────────────────────────────────
+class TokenOut(BaseModel):
+    """Token de acceso JWT emitido a partir de una API key."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "expires_in": 43200,
+            }
+        }
+    )
+
+    access_token: str = Field(..., description="JWT firmado (HS256).")
+    token_type: str = Field("bearer", description="Tipo de token (siempre 'bearer').")
+    expires_in: int = Field(..., description="Segundos hasta la caducidad (12 h = 43200).")
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  Ejemplos realistas que se muestran en Swagger (el "Example Value" del 200).
 #  Son valores ILUSTRATIVOS, no datos reales; sirven para ver la forma de la

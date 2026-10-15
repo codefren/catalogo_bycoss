@@ -1,8 +1,10 @@
 """API de solo lectura para exponer el catálogo a terceros.
 
 Seguridad:
-  · Autenticación por clave de API en la cabecera `X-API-Key` (comparación en
-    tiempo constante). Todos los endpoints de datos la exigen.
+  · Autenticación JWT con usuario: POST /auth/token recibe usuario + contraseña
+    (validados contra la tabla `api_users`, hash bcrypt) y devuelve un JWT que
+    caduca a las 12 h. Los endpoints de datos exigen ese token en
+    `Authorization: Bearer <token>`.
   · CORS restringido a los orígenes configurados (nunca "*").
   · Rate limiting por IP (slowapi).
   · Consultas parametrizadas (bind params): sin inyección SQL.
@@ -14,17 +16,27 @@ Esquema OpenAPI: /openapi.json
 """
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 
 from db import engine
 from routers import sku as sku_router
 from routers import ventas as ventas_router
-from security import limiter, require_api_key
+from schemas import TokenOut
+from security import (
+    RATE_LIMIT_RESPONSE,
+    create_access_token,
+    limiter,
+    require_jwt,
+    verify_password,
+)
 from settings import settings
+from users import get_user
 
 # Agrupaciones que verás en Swagger, con descripción por grupo.
 tags_metadata = [
+    {"name": "Autenticación", "description": "Login (usuario + contraseña) que devuelve el token JWT."},
     {"name": "SKU — catálogo", "description": "Referencias del catálogo a nivel artículo-color-talla (tabla `sku`)."},
     {"name": "Ventas — líneas de ticket", "description": "Líneas de venta (tabla `ticket_maestro`); una fila por línea de ticket."},
     {"name": "Artículos (legacy)", "description": "Endpoints heredados del esqueleto inicial."},
@@ -36,8 +48,14 @@ app = FastAPI(
     version="1.1.0",
     description=(
         "Consulta de **solo lectura** del catálogo (SKUs y ventas).\n\n"
-        "**Autenticación:** envía tu clave en la cabecera `X-API-Key`. "
-        "En Swagger, usa el botón **Authorize** (arriba a la derecha).\n\n"
+        "**Autenticación (JWT con usuario):**\n"
+        "1. Llama a `POST /auth/token` con tu **usuario** y **contraseña** "
+        "(formulario). Se validan contra la tabla `api_users`.\n"
+        "2. Recibes un `access_token` (JWT) que **caduca a las 12 h**.\n"
+        "3. Usa ese token en los endpoints `/api/*` como "
+        "`Authorization: Bearer <token>`.\n\n"
+        "En Swagger: pulsa **Authorize** (arriba), introduce usuario y "
+        "contraseña y listo.\n\n"
         f"**Límite de peticiones (rate limiting):** máximo **{settings.rate_limit}** "
         "por IP, compartido por todos los endpoints `/api/*`. Al superarlo, la API "
         "responde `429 Too Many Requests`. El valor se configura con la variable "
@@ -60,8 +78,8 @@ if settings.cors_list:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_list,
-        allow_methods=["GET"],
-        allow_headers=["X-API-Key"],
+        allow_methods=["GET", "POST"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
 
@@ -69,6 +87,34 @@ if settings.cors_list:
 @app.get("/health", tags=["Infra"], summary="Estado del servicio")
 async def health():
     return {"status": "ok"}
+
+
+# ── Autenticación: login con usuario + contraseña → JWT ──────────────────────
+@app.post(
+    "/auth/token",
+    response_model=TokenOut,
+    tags=["Autenticación"],
+    summary="Login (usuario + contraseña)",
+    description="Envía `username` y `password` (formulario). Si son válidos "
+    "contra la tabla `api_users`, devuelve un JWT que caduca a las 12 h. Úsalo "
+    "luego como `Authorization: Bearer <token>` en los endpoints `/api/*`.",
+    responses={401: {"description": "Usuario o contraseña incorrectos"}, **RATE_LIMIT_RESPONSE},
+)
+@limiter.limit(settings.rate_limit)
+async def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
+    user = await get_user(form.username)
+    if (
+        user is None
+        or not user["activo"]
+        or not verify_password(form.password, user["password_hash"])
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Usuario o contraseña incorrectos",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token, expires_in = create_access_token(subject=form.username)
+    return TokenOut(access_token=token, token_type="bearer", expires_in=expires_in)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -90,7 +136,7 @@ async def list_articulos(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     categoria: str | None = Query(None, max_length=100),
-    _: str = Depends(require_api_key),
+    _: dict = Depends(require_jwt),
 ):
     sql = "SELECT id, codigo, descripcion, categoria, actualizado FROM articulos"
     params: dict = {}
@@ -110,7 +156,7 @@ async def list_articulos(
 async def get_articulo(
     request: Request,
     articulo_id: int,
-    _: str = Depends(require_api_key),
+    _: dict = Depends(require_jwt),
 ):
     async with engine.connect() as conn:
         row = (
@@ -132,7 +178,7 @@ async def get_articulo(
 async def get_existencias(
     request: Request,
     articulo_id: int,
-    _: str = Depends(require_api_key),
+    _: dict = Depends(require_jwt),
 ):
     async with engine.connect() as conn:
         rows = (
