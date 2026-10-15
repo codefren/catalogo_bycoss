@@ -8,26 +8,40 @@ Seguridad:
   · Consultas parametrizadas (bind params): sin inyección SQL.
   · Solo GET: los terceros consultan; la ACTUALIZACIÓN del catálogo la hace
     Databricks por JDBC directo a Postgres, no pasa por aquí.
-"""
-import secrets
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Security
+Documentación interactiva (Swagger UI): /docs   ·   ReDoc: /redoc
+Esquema OpenAPI: /openapi.json
+"""
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import APIKeyHeader
-from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 from sqlalchemy import text
 
 from db import engine
+from routers import sku as sku_router
+from routers import ventas as ventas_router
+from security import limiter, require_api_key
 from settings import settings
 
-limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit])
+# Agrupaciones que verás en Swagger, con descripción por grupo.
+tags_metadata = [
+    {"name": "SKU — catálogo", "description": "Referencias del catálogo a nivel artículo-color-talla (tabla `sku`)."},
+    {"name": "Ventas — líneas de ticket", "description": "Líneas de venta (tabla `ticket_maestro`); una fila por línea de ticket."},
+    {"name": "Artículos (legacy)", "description": "Endpoints heredados del esqueleto inicial."},
+    {"name": "Infra", "description": "Salud del servicio."},
+]
 
 app = FastAPI(
     title="Catálogo API",
-    version="1.0.0",
-    description="Consulta de solo lectura del catálogo.",
+    version="1.1.0",
+    description=(
+        "Consulta de **solo lectura** del catálogo (SKUs y ventas).\n\n"
+        "Autentícate enviando tu clave en la cabecera `X-API-Key`. "
+        "En Swagger, usa el botón **Authorize** (arriba a la derecha)."
+    ),
+    openapi_tags=tags_metadata,
+    contact={"name": "Soporte catálogo", "email": "efrenoscar6@gmail.com"},
+    license_info={"name": "Uso privado"},
 )
 app.state.limiter = limiter
 
@@ -45,24 +59,26 @@ if settings.cors_list:
         allow_headers=["X-API-Key"],
     )
 
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-
-async def require_api_key(key: str = Security(api_key_header)) -> str:
-    """Valida la clave en tiempo constante contra el conjunto configurado."""
-    if key and any(secrets.compare_digest(key, k) for k in settings.api_key_set):
-        return key
-    raise HTTPException(status_code=401, detail="API key inválida o ausente")
-
 
 # ── Health (sin auth): lo usa el healthcheck del contenedor ──────────────────
-@app.get("/health")
+@app.get("/health", tags=["Infra"], summary="Estado del servicio")
 async def health():
     return {"status": "ok"}
 
 
-# ── Listado de artículos ─────────────────────────────────────────────────────
-@app.get("/api/articulos")
+# ─────────────────────────────────────────────────────────────────────────────
+#  Routers de las tablas reales del catálogo
+# ─────────────────────────────────────────────────────────────────────────────
+app.include_router(sku_router.router)
+app.include_router(ventas_router.router)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Endpoints heredados del esqueleto inicial (tablas articulos/existencias).
+#  OJO: su esquema asumido (id, codigo, descripcion…) puede no coincidir con las
+#  columnas reales; se conservan para no romper integraciones previas.
+# ─────────────────────────────────────────────────────────────────────────────
+@app.get("/api/articulos", tags=["Artículos (legacy)"])
 @limiter.limit(settings.rate_limit)
 async def list_articulos(
     request: Request,
@@ -84,8 +100,7 @@ async def list_articulos(
     return {"items": [dict(r) for r in rows], "limit": limit, "offset": offset}
 
 
-# ── Un artículo por id ───────────────────────────────────────────────────────
-@app.get("/api/articulos/{articulo_id}")
+@app.get("/api/articulos/{articulo_id}", tags=["Artículos (legacy)"])
 @limiter.limit(settings.rate_limit)
 async def get_articulo(
     request: Request,
@@ -107,8 +122,7 @@ async def get_articulo(
     return dict(row)
 
 
-# ── Existencias de un artículo ───────────────────────────────────────────────
-@app.get("/api/articulos/{articulo_id}/existencias")
+@app.get("/api/articulos/{articulo_id}/existencias", tags=["Artículos (legacy)"])
 @limiter.limit(settings.rate_limit)
 async def get_existencias(
     request: Request,
