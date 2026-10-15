@@ -1,0 +1,117 @@
+# Endpoints de la Catálogo API
+
+API de **solo lectura**. Todos los `/api/*` requieren un **access token** JWT en
+la cabecera `Authorization: Bearer <token>` (ver [autenticacion.md](autenticacion.md)
+para obtenerlo). Las respuestas son JSON.
+
+- Base URL: `https://bycos.data4tex.com`
+- Swagger: `/docs` · ReDoc: `/redoc` · OpenAPI: `/openapi.json`
+
+Los listados devuelven un **sobre paginado**:
+
+```json
+{ "items": [ ... ], "count": 2, "limit": 50, "offset": 0 }
+```
+
+- `limit`: tamaño de página (1–500, por defecto 50).
+- `offset`: desplazamiento (paginación).
+- `count`: nº de filas devueltas en esta página.
+
+Todos los endpoints están sujetos al **rate limit** por IP (`60/minute` por
+defecto); al superarlo devuelven `429`.
+
+---
+
+## SKU — catálogo (`sku`)
+
+### `GET /api/skus`
+Lista paginada de SKUs (una fila por artículo-color-talla).
+
+| Filtro | Columna | Descripción |
+|--------|---------|-------------|
+| `articulo` | `fldIdArticulo` | Todas las **permutas** (color/talla) de un artículo. |
+| `q` | `articulo_descripcion` | Texto parcial en la descripción (sin distinguir mayúsculas). |
+| `temporada` | `fldTemporada` | Igualdad exacta. |
+| `familia` | `fldIdFamilia` | Igualdad exacta. |
+| `proveedor` | `fldIdProveedor` | Igualdad exacta. |
+| `marca` | `fldIdMarca` | Igualdad exacta. |
+| `color` | `fldIdColor` | Igualdad exacta. |
+| `talla` | `talla` | Igualdad exacta. |
+| `con_stock` | `stock_disponible` | `true` → solo con stock > 0. |
+| `limit`, `offset` | — | Paginación. |
+
+Ordena por código de SKU.
+
+```bash
+# Todas las permutas del artículo 0100228002
+curl -s "$BASE/api/skus?articulo=0100228002&limit=500" -H "Authorization: Bearer $ACCESS"
+```
+
+### `GET /api/skus/{sku}`
+Una referencia por su código de SKU. `404` si no existe.
+
+```bash
+curl -s "$BASE/api/skus/0100228002-000005-U" -H "Authorization: Bearer $ACCESS"
+```
+
+---
+
+## Ventas — líneas de ticket (`ticket_maestro`)
+
+### `GET /api/ventas`
+Lista paginada de líneas de ticket (una fila por línea). Ordena por fecha
+descendente.
+
+| Filtro | Columna | Descripción |
+|--------|---------|-------------|
+| `fecha_desde` | `fecha` | Fecha **mínima** (inclusive), `YYYY-MM-DD`. |
+| `fecha_hasta` | `fecha` | Fecha **máxima** (inclusive), `YYYY-MM-DD`. |
+| `almacen` | `fldIdAlmacen` | Igualdad exacta. |
+| `ticket` | `fldIdTicket` | Igualdad exacta. |
+| `sku` | `sku` | Igualdad exacta (SKU vendido). |
+| `cliente` | `fldIdCliente` | Igualdad exacta. |
+| `limit`, `offset` | — | Paginación. |
+
+**Rango de fechas:** `fecha_desde` y `fecha_hasta` son independientes; puedes
+usar una, otra o ambas. Ambas incluyen el día indicado.
+
+```bash
+# Ventas de julio de 2025 (rango cerrado)
+curl -s "$BASE/api/ventas?fecha_desde=2025-07-01&fecha_hasta=2025-07-31&limit=500" \
+  -H "Authorization: Bearer $ACCESS"
+
+# Ventas desde una fecha en adelante
+curl -s "$BASE/api/ventas?fecha_desde=2025-01-01" -H "Authorization: Bearer $ACCESS"
+
+# Rango de fechas de un almacén concreto
+curl -s "$BASE/api/ventas?fecha_desde=2025-06-01&fecha_hasta=2025-06-30&almacen=00000207" \
+  -H "Authorization: Bearer $ACCESS"
+
+# Rango de fechas de un SKU concreto
+curl -s "$BASE/api/ventas?fecha_desde=2025-01-01&fecha_hasta=2025-12-31&sku=0100228002-000005-U" \
+  -H "Authorization: Bearer $ACCESS"
+```
+
+> Nota: para rangos grandes usa `limit` (máx. 500) y pagina con `offset`, o
+> acota con más filtros.
+
+### `GET /api/ventas/ticket/{empresa}/{almacen}/{caja}/{ticket}`
+Todas las líneas de un ticket por su clave natural (empresa, almacén, caja,
+ticket), ordenadas por línea. `404` si no hay líneas.
+
+```bash
+curl -s "$BASE/api/ventas/ticket/0001/00000207/000001/2072056051" \
+  -H "Authorization: Bearer $ACCESS"
+```
+
+---
+
+## Variables de los ejemplos
+
+```bash
+BASE=https://bycos.data4tex.com
+# Obtén el access token (ver autenticacion.md):
+ACCESS=$(curl -s -X POST "$BASE/auth/token" \
+  --data-urlencode "username=bycos" --data-urlencode "password=TU_CONTRASEÑA" \
+  | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+```

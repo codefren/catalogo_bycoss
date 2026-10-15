@@ -23,8 +23,9 @@ router = APIRouter(prefix="/api/skus", tags=["SKU — catálogo"])
     response_model=SkuPage,
     summary="Listar SKUs",
     description="Lista paginada del catálogo, con filtros opcionales por "
-    "temporada, familia, proveedor, marca, color, talla y texto en la "
-    "descripción. Ordena por código de SKU.",
+    "artículo, temporada, familia, proveedor, marca, color, talla y texto en la "
+    "descripción. Filtrar por `articulo` (fldIdArticulo) devuelve todas las "
+    "permutas color/talla de ese artículo. Ordena por código de SKU.",
     responses=RATE_LIMIT_RESPONSE,
 )
 @limiter.limit(settings.rate_limit)
@@ -33,6 +34,7 @@ async def list_skus(
     limit: int = Query(50, ge=1, le=500, description="Tamaño de página."),
     offset: int = Query(0, ge=0, description="Desplazamiento."),
     q: str | None = Query(None, max_length=200, description="Busca en la descripción del artículo (parcial, sin distinguir mayúsculas)."),
+    articulo: str | None = Query(None, max_length=50, description="Filtra por fldIdArticulo: devuelve todas las permutas (color/talla) de ese artículo."),
     temporada: str | None = Query(None, max_length=50, description="Filtra por fldTemporada."),
     familia: str | None = Query(None, max_length=50, description="Filtra por fldIdFamilia."),
     proveedor: str | None = Query(None, max_length=50, description="Filtra por fldIdProveedor."),
@@ -47,6 +49,9 @@ async def list_skus(
     if q:
         where.append("articulo_descripcion ILIKE :q")
         params["q"] = f"%{q}%"
+    if articulo:
+        where.append('"fldIdArticulo" = :articulo')
+        params["articulo"] = articulo
     if temporada:
         where.append('"fldTemporada" = :temporada')
         params["temporada"] = temporada
