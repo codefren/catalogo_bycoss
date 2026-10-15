@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # Caducidad del token de acceso, en horas.
     access_token_expire_hours: int = 12
 
+    # Caducidad del refresh token, en días.
+    refresh_token_expire_days: int = 7
+
     @property
     def cors_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

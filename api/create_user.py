@@ -18,15 +18,7 @@ from sqlalchemy import text
 
 from db import engine
 from security import hash_password
-
-_DDL = """
-CREATE TABLE IF NOT EXISTS api_users (
-    username      TEXT PRIMARY KEY,
-    password_hash TEXT        NOT NULL,
-    activo        BOOLEAN     NOT NULL DEFAULT TRUE,
-    creado_en     TIMESTAMPTZ NOT NULL DEFAULT now()
-)
-"""
+from users import USERS_DDL
 
 _UPSERT = """
 INSERT INTO api_users (username, password_hash, activo)
@@ -38,7 +30,7 @@ DO UPDATE SET password_hash = EXCLUDED.password_hash, activo = EXCLUDED.activo
 
 async def upsert_user(username: str, password: str, activo: bool) -> None:
     async with engine.begin() as conn:
-        await conn.execute(text(_DDL))
+        await conn.execute(text(USERS_DDL))
         await conn.execute(
             text(_UPSERT),
             {"u": username, "h": hash_password(password), "a": activo},

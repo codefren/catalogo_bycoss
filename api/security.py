@@ -9,6 +9,7 @@ Modelo de autenticación (JWT con usuario):
   3. Los endpoints de datos exigen ese JWT en `Authorization: Bearer <token>`
      (require_jwt).
 """
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -64,6 +65,16 @@ def create_access_token(subject: str) -> tuple[str, int]:
     }
     token = jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
     return token, expires_in
+
+
+def create_refresh_token() -> tuple[str, int]:
+    """Genera un refresh token opaco (aleatorio) y sus segundos de caducidad.
+
+    No es un JWT: es un secreto aleatorio; en la DB se guarda solo su hash.
+    Devuelve (token, segundos_hasta_caducidad).
+    """
+    expires_in = settings.refresh_token_expire_days * 86400
+    return secrets.token_urlsafe(48), expires_in
 
 
 async def require_jwt(token: str | None = Security(oauth2_scheme)) -> dict:

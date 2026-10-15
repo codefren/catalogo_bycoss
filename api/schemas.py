@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 #  Autenticación — respuesta de /auth/token
 # ─────────────────────────────────────────────────────────────────────────────
 class TokenOut(BaseModel):
-    """Token de acceso JWT emitido a partir de una API key."""
+    """Par de tokens emitido en el login y en el refresh."""
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -25,13 +25,27 @@ class TokenOut(BaseModel):
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
                 "expires_in": 43200,
+                "refresh_token": "Xq3f9...token-opaco-largo...7bZ",
+                "refresh_expires_in": 604800,
             }
         }
     )
 
     access_token: str = Field(..., description="JWT firmado (HS256).")
     token_type: str = Field("bearer", description="Tipo de token (siempre 'bearer').")
-    expires_in: int = Field(..., description="Segundos hasta la caducidad (12 h = 43200).")
+    expires_in: int = Field(..., description="Segundos hasta la caducidad del access token (12 h = 43200).")
+    refresh_token: str = Field(..., description="Refresh token opaco para renovar sin re-login.")
+    refresh_expires_in: int = Field(..., description="Segundos hasta la caducidad del refresh token (7 d = 604800).")
+
+
+class RefreshIn(BaseModel):
+    """Cuerpo de /auth/refresh y /auth/logout."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"refresh_token": "Xq3f9...token-opaco-largo...7bZ"}}
+    )
+
+    refresh_token: str = Field(..., description="Refresh token recibido en el login o en el refresh anterior.")
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Ejemplos realistas que se muestran en Swagger (el "Example Value" del 200).

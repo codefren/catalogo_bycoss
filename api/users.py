@@ -10,6 +10,17 @@ from sqlalchemy import text
 
 from db import engine
 
+# DDL de la tabla de usuarios. Se usa en el arranque (lifespan) y en
+# create_user.py para que funcione también sobre una base ya existente.
+USERS_DDL = """
+CREATE TABLE IF NOT EXISTS api_users (
+    username      TEXT PRIMARY KEY,
+    password_hash TEXT        NOT NULL,
+    activo        BOOLEAN     NOT NULL DEFAULT TRUE,
+    creado_en     TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+"""
+
 
 async def get_user(username: str) -> dict | None:
     """Devuelve {username, password_hash, activo} o None si no existe."""
