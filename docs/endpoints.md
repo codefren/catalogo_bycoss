@@ -146,6 +146,52 @@ curl -s "$BASE/api/compras?articulo=0100228002&temporada=V25&limit=500" \
 
 ---
 
+## Cajas pendientes (`cajas_pendientes`)
+
+Cajas/envíos pendientes de llegada a tienda (una fila por artículo-color-talla
+dentro de una caja). **Las claves del JSON van normalizadas a snake_case**
+(p. ej. `codigo_caja`, `dispatch_note`) aunque en el origen las columnas sean
+PascalCase; `total_prendas` y `cantidad` se devuelven como enteros y las fechas
+como texto.
+
+### `GET /api/cajas-pendientes`
+Lista paginada. Ordena por fecha de salida descendente.
+
+| Filtro | Columna origen | Descripción |
+|--------|----------------|-------------|
+| `tienda` | `Tienda` | Igualdad exacta. |
+| `cliente` | `CodCliente` | Igualdad exacta. |
+| `articulo` | `Articulo` | Igualdad exacta. |
+| `ean` | `EAN` | Igualdad exacta (código de barras). |
+| `caja` | `CodigoCaja` | Igualdad exacta. |
+| `pedido` | `NoPedido` | Igualdad exacta. |
+| `envio` | `NoEnvio` | Igualdad exacta. |
+| `dispatch_note` | `DispathNote` | Igualdad exacta (albarán). |
+| `limit`, `offset` | — | Paginación. |
+
+> Nota: `fecha_salida` y `fecha_llegada` son **texto** en el origen, por eso no
+> hay filtro por rango de fechas. Si el origen pasa a fecha real (o se confirma
+> el formato), se añade.
+
+```bash
+# Cajas pendientes de una tienda
+curl -s "$BASE/api/cajas-pendientes?tienda=00000207&limit=500" \
+  -H "Authorization: Bearer $ACCESS"
+
+# Buscar una prenda concreta por EAN
+curl -s "$BASE/api/cajas-pendientes?ean=8412345678901" -H "Authorization: Bearer $ACCESS"
+```
+
+### `GET /api/cajas-pendientes/caja/{codigo_caja}`
+Todas las líneas de una caja por su `CodigoCaja`, ordenadas por artículo y talla.
+`404` si no hay líneas.
+
+```bash
+curl -s "$BASE/api/cajas-pendientes/caja/CJ0000998877" -H "Authorization: Bearer $ACCESS"
+```
+
+---
+
 ## Variables de los ejemplos
 
 ```bash

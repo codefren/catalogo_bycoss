@@ -58,27 +58,14 @@ _SKU_EXAMPLE = {
     "articulo_descripcion": "Camiseta manga corta",
     "fldTemporada": "V25",
     "fldIdFamilia": "CAM",
-    "fldIdProveedor": "PROV012",
     "fldReferencia": "REF-55120",
     "fldColeccion": "Primavera-Verano 2025",
-    "fldMinimoStock": 5,
-    "fldMaximoStock": 50,
-    "fldPuntoPedido": 10,
     "fldIdMarca": "BYC",
-    "fldIdSexo": "H",
-    "fldIdGrupo": "G01",
-    "fldIdSubgrupo": "SG03",
-    "fldIdSubfamilia": "SF07",
-    "fldIdTemporadaVenta": "V25",
     "fldIdColor": "05",
     "color_descripcion": "Azul marino",
     "fldIdGrupoTallas": "GT1",
     "grupotalla_descripcion": "Tallas S-XXL",
     "talla": "M",
-    "total_entradas": 120,
-    "total_salidas": 97,
-    "total_servicio": 0,
-    "total_transito": 0,
     "stock_disponible": 23,
     "num_almacenes": 3,
     "actualizado_en": "2025-10-14T02:11:00",
@@ -93,26 +80,8 @@ _TICKET_EXAMPLE = {
     "fecha": "2025-07-14",
     "fldHora": "19:26:44",
     "fldIdCliente": "00000001",
-    "fldIdOperario": "00010",
-    "fldIdCajera": "00010",
-    "fldPrendas": 2,
-    "fldImporteBruto": 59.90,
-    "fldImporteDto": 0,
-    "fldImporteNeto": 59.90,
-    "fldCobradoTicket": 59.90,
-    "fldPteTicket": 0,
     "fldIdMoneda": "EUR",
     "fldCambio": 1,
-    "dto_cabecera": 0,
-    "id_cierre": "C20250714",
-    "fldVales": 0,
-    "fldApartados": 0,
-    "fldArreglos": 0,
-    "fldPromociones": 0,
-    "fldChequeRegalo": 0,
-    "fldCupones": 0,
-    "fldEspecial": 0,
-    "fldIdVale": "",
     "fldIdArticulo": "001234",
     "fldIdColor": "05",
     "fldTalla": "M",
@@ -121,11 +90,7 @@ _TICKET_EXAMPLE = {
     "fldPrecio": 29.95,
     "dto_linea": 0,
     "importe_linea": 29.95,
-    "fldIdPromocion": "",
-    "fldIdPromoCat": "",
     "fldIVA": 21,
-    "fldVentaReal": 1,
-    "fldIdRebaja": "",
     "actualizado_en": "2025-07-14T23:00:00",
 }
 _COMPRA_EXAMPLE = {
@@ -139,7 +104,6 @@ _COMPRA_EXAMPLE = {
     "talla_pos": 3,
     "talla": "M",
     "cantidad": 24.0,
-    "acumulado": 120.0,
     "fldIdMoneda": "EUR",
     "fldCambio": 1.0,
     "descripcion_articulo": "Camiseta manga corta",
@@ -166,27 +130,14 @@ class SkuOut(BaseModel):
     articulo_descripcion: str | None = Field(None, description="Descripción del artículo.")
     fldTemporada: str | None = Field(None, description="Temporada del artículo.")
     fldIdFamilia: str | None = Field(None, description="Código de familia.")
-    fldIdProveedor: str | None = Field(None, description="Código de proveedor.")
     fldReferencia: str | None = Field(None, description="Referencia del proveedor/fabricante.")
     fldColeccion: str | None = Field(None, description="Colección.")
-    fldMinimoStock: float | None = Field(None, description="Stock mínimo configurado.")
-    fldMaximoStock: float | None = Field(None, description="Stock máximo configurado.")
-    fldPuntoPedido: float | None = Field(None, description="Punto de pedido.")
     fldIdMarca: str | None = Field(None, description="Código de marca.")
-    fldIdSexo: str | None = Field(None, description="Código de sexo/segmento.")
-    fldIdGrupo: str | None = Field(None, description="Código de grupo.")
-    fldIdSubgrupo: str | None = Field(None, description="Código de subgrupo.")
-    fldIdSubfamilia: str | None = Field(None, description="Código de subfamilia.")
-    fldIdTemporadaVenta: str | None = Field(None, description="Temporada de venta.")
     fldIdColor: str | None = Field(None, description="Código de color.")
     color_descripcion: str | None = Field(None, description="Descripción del color.")
     fldIdGrupoTallas: str | None = Field(None, description="Código del grupo de tallas.")
     grupotalla_descripcion: str | None = Field(None, description="Descripción del grupo de tallas.")
     talla: str | None = Field(None, description="Talla.")
-    total_entradas: float | None = Field(None, description="Total de entradas acumuladas.")
-    total_salidas: float | None = Field(None, description="Total de salidas acumuladas.")
-    total_servicio: float | None = Field(None, description="Total en servicio.")
-    total_transito: float | None = Field(None, description="Total en tránsito.")
     stock_disponible: float | None = Field(None, description="Stock disponible calculado.")
     num_almacenes: int | None = Field(None, description="Nº de almacenes con existencias.")
     actualizado_en: datetime | None = Field(None, description="Última actualización del registro.")
@@ -218,7 +169,7 @@ class TicketLineaOut(BaseModel):
         json_schema_extra={"example": _TICKET_EXAMPLE},
     )
 
-    # ── Cabecera del ticket ──────────────────────────────────────────────────
+    # ── Identidad de la línea ────────────────────────────────────────────────
     fldIdEmpresa: str | None = Field(None, description="Código de empresa.")
     fldIdAlmacen: str | None = Field(None, description="Código de almacén/tienda.")
     fldIdCaja: str | None = Field(None, description="Código de caja/TPV.")
@@ -227,27 +178,9 @@ class TicketLineaOut(BaseModel):
     fecha: date | None = Field(None, description="Fecha del ticket.")
     fldHora: str | None = Field(None, description="Hora del ticket.")
     fldIdCliente: str | None = Field(None, description="Código de cliente.")
-    fldIdOperario: str | None = Field(None, description="Código de operario.")
-    fldIdCajera: str | None = Field(None, description="Código de cajera/o.")
-    fldPrendas: float | None = Field(None, description="Nº de prendas del ticket.")
-    fldImporteBruto: float | None = Field(None, description="Importe bruto del ticket.")
-    fldImporteDto: float | None = Field(None, description="Descuento del ticket.")
-    fldImporteNeto: float | None = Field(None, description="Importe neto del ticket.")
-    fldCobradoTicket: float | None = Field(None, description="Importe cobrado.")
-    fldPteTicket: float | None = Field(None, description="Importe pendiente.")
     fldIdMoneda: str | None = Field(None, description="Código de moneda.")
     fldCambio: float | None = Field(None, description="Tipo de cambio aplicado.")
-    dto_cabecera: float | None = Field(None, description="Descuento de cabecera.")
-    id_cierre: str | None = Field(None, description="Identificador de cierre de caja.")
-    fldVales: int | None = Field(None, description="Nº de vales.")
-    fldApartados: int | None = Field(None, description="Nº de apartados.")
-    fldArreglos: int | None = Field(None, description="Nº de arreglos.")
-    fldPromociones: int | None = Field(None, description="Nº de promociones.")
-    fldChequeRegalo: int | None = Field(None, description="Nº de cheques regalo.")
-    fldCupones: float | None = Field(None, description="Importe de cupones.")
-    fldEspecial: float | None = Field(None, description="Importe especial.")
     # ── Detalle de la línea ──────────────────────────────────────────────────
-    fldIdVale: str | None = Field(None, description="Identificador de vale.")
     fldIdArticulo: str | None = Field(None, description="Código de artículo de la línea.")
     fldIdColor: str | None = Field(None, description="Código de color de la línea.")
     fldTalla: str | None = Field(None, description="Talla de la línea.")
@@ -256,11 +189,7 @@ class TicketLineaOut(BaseModel):
     fldPrecio: float | None = Field(None, description="Precio unitario.")
     dto_linea: float | None = Field(None, description="Descuento de la línea.")
     importe_linea: float | None = Field(None, description="Importe de la línea.")
-    fldIdPromocion: str | None = Field(None, description="Código de promoción.")
-    fldIdPromoCat: str | None = Field(None, description="Categoría de promoción.")
     fldIVA: float | None = Field(None, description="IVA aplicado.")
-    fldVentaReal: int | None = Field(None, description="Indicador de venta real.")
-    fldIdRebaja: str | None = Field(None, description="Código de rebaja.")
     actualizado_en: datetime | None = Field(None, description="Última actualización del registro.")
 
 
@@ -301,7 +230,6 @@ class CompraOut(BaseModel):
     talla_pos: int | None = Field(None, description="Posición de la talla dentro del grupo de tallas.")
     talla: str | None = Field(None, description="Talla.")
     cantidad: float | None = Field(None, description="Cantidad comprada en la línea.")
-    acumulado: float | None = Field(None, description="Cantidad acumulada.")
     fldIdMoneda: str | None = Field(None, description="Código de moneda.")
     fldCambio: float | None = Field(None, description="Tipo de cambio aplicado.")
     descripcion_articulo: str | None = Field(None, description="Descripción del artículo.")
@@ -321,6 +249,88 @@ class ComprasPage(BaseModel):
     )
 
     items: list[CompraOut]
+    count: int = Field(..., description="Nº de filas devueltas en esta página.")
+    limit: int = Field(..., description="Tamaño de página solicitado.")
+    offset: int = Field(..., description="Desplazamiento solicitado.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CAJAS_PENDIENTES — líneas de caja/envío pendientes de llegada a tienda.
+#  Grano: una fila por artículo-color-talla dentro de una caja.
+#
+#  NOTA: en el origen TODAS las columnas son `text` (incluidas fechas y
+#  cantidades) y usan PascalCase con un typo (`DispathNote`). El router las
+#  normaliza: entrega claves snake_case limpias (SELECT ... AS ...), tipa las
+#  cantidades como enteros y deja las fechas como string (hasta confirmar su
+#  formato real en el origen).
+# ─────────────────────────────────────────────────────────────────────────────
+_CAJA_EXAMPLE = {
+    "cod_cliente": "C00123",
+    "tienda": "00000207",
+    "nombre_tienda": "BYC Gran Vía",
+    "dispatch_note": "DN-2025-04815",
+    "fecha_salida": "2025-10-10",
+    "fecha_llegada": "2025-10-14",
+    "codigo_caja": "CJ0000998877",
+    "no_bulto": "1/3",
+    "total_prendas": 12,
+    "no_pedido": "PED-55120",
+    "no_envio": "ENV-20812",
+    "ean": "8412345678901",
+    "articulo": "001234",
+    "color": "05",
+    "talla": "M",
+    "descripcion_articulo": "Camiseta manga corta",
+    "descripcion_color": "Azul marino",
+    "marca": "BYC",
+    "familia": "CAM",
+    "descripcion_familia": "Camisetas",
+    "cantidad": 2,
+}
+
+
+class CajaPendienteOut(BaseModel):
+    """Una línea de caja pendiente (tabla `cajas_pendientes`), con claves
+    normalizadas a snake_case."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": _CAJA_EXAMPLE},
+    )
+
+    cod_cliente: str | None = Field(None, description="Código de cliente (origen: CodCliente).")
+    tienda: str | None = Field(None, description="Código de tienda (origen: Tienda).")
+    nombre_tienda: str | None = Field(None, description="Nombre de la tienda (origen: NombreTienda).")
+    dispatch_note: str | None = Field(None, description="Nº de albarán de envío (origen: DispathNote).")
+    fecha_salida: str | None = Field(None, description="Fecha de salida (texto en origen: FechaSalida).")
+    fecha_llegada: str | None = Field(None, description="Fecha de llegada (texto en origen: FechaLLegada).")
+    codigo_caja: str | None = Field(None, description="Código de caja (origen: CodigoCaja).")
+    no_bulto: str | None = Field(None, description="Nº de bulto (origen: NoBulto).")
+    total_prendas: int | None = Field(None, description="Total de prendas de la caja (origen: TotalPrendas).")
+    no_pedido: str | None = Field(None, description="Nº de pedido (origen: NoPedido).")
+    no_envio: str | None = Field(None, description="Nº de envío (origen: NoEnvio).")
+    ean: str | None = Field(None, description="Código de barras EAN (origen: EAN).")
+    articulo: str | None = Field(None, description="Código de artículo (origen: Articulo).")
+    color: str | None = Field(None, description="Código de color (origen: Color).")
+    talla: str | None = Field(None, description="Talla (origen: Talla).")
+    descripcion_articulo: str | None = Field(None, description="Descripción del artículo (origen: Descri_Art).")
+    descripcion_color: str | None = Field(None, description="Descripción del color (origen: Descri_Color).")
+    marca: str | None = Field(None, description="Marca (origen: Marca).")
+    familia: str | None = Field(None, description="Código de familia (origen: Familia).")
+    descripcion_familia: str | None = Field(None, description="Descripción de la familia (origen: Descri_Familia).")
+    cantidad: int | None = Field(None, description="Cantidad en la línea (origen: Cantidad).")
+
+
+class CajasPendientesPage(BaseModel):
+    """Página de resultados de líneas de caja pendiente."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"items": [_CAJA_EXAMPLE], "count": 1, "limit": 50, "offset": 0}
+        }
+    )
+
+    items: list[CajaPendienteOut]
     count: int = Field(..., description="Nº de filas devueltas en esta página.")
     limit: int = Field(..., description="Tamaño de página solicitado.")
     offset: int = Field(..., description="Desplazamiento solicitado.")
