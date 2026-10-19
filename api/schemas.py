@@ -128,6 +128,26 @@ _TICKET_EXAMPLE = {
     "fldIdRebaja": "",
     "actualizado_en": "2025-07-14T23:00:00",
 }
+_COMPRA_EXAMPLE = {
+    "fldIdEmpresa": "0001",
+    "fldIdAlmacen": "00000207",
+    "fldIdProveedor": "PROV012",
+    "nombre_proveedor": "Textiles del Norte, S.L.",
+    "fecha": "2025-06-30",
+    "fldIdArticulo": "001234",
+    "fldIdColor": "05",
+    "talla_pos": 3,
+    "talla": "M",
+    "cantidad": 24.0,
+    "acumulado": 120.0,
+    "fldIdMoneda": "EUR",
+    "fldCambio": 1.0,
+    "descripcion_articulo": "Camiseta manga corta",
+    "fldTemporada": "V25",
+    "fldIdFamilia": "CAM",
+    "fldIdGrupoTallas": "GT1",
+    "descripcion_grupo_tallas": "Tallas S-XXL",
+}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -254,6 +274,53 @@ class TicketPage(BaseModel):
     )
 
     items: list[TicketLineaOut]
+    count: int = Field(..., description="Nº de filas devueltas en esta página.")
+    limit: int = Field(..., description="Tamaño de página solicitado.")
+    offset: int = Field(..., description="Desplazamiento solicitado.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  COMPRAS_MAESTRO — líneas de compra a proveedor.
+#  Grano: una fila por artículo-color-talla comprado (sin PK declarada).
+# ─────────────────────────────────────────────────────────────────────────────
+class CompraOut(BaseModel):
+    """Una línea de compra (tabla `compras_maestro`)."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": _COMPRA_EXAMPLE},
+    )
+
+    fldIdEmpresa: str | None = Field(None, description="Código de empresa.")
+    fldIdAlmacen: str | None = Field(None, description="Código de almacén/tienda.")
+    fldIdProveedor: str | None = Field(None, description="Código de proveedor.")
+    nombre_proveedor: str | None = Field(None, description="Nombre del proveedor.")
+    fecha: date | None = Field(None, description="Fecha de la compra.")
+    fldIdArticulo: str | None = Field(None, description="Código de artículo.")
+    fldIdColor: str | None = Field(None, description="Código de color.")
+    talla_pos: int | None = Field(None, description="Posición de la talla dentro del grupo de tallas.")
+    talla: str | None = Field(None, description="Talla.")
+    cantidad: float | None = Field(None, description="Cantidad comprada en la línea.")
+    acumulado: float | None = Field(None, description="Cantidad acumulada.")
+    fldIdMoneda: str | None = Field(None, description="Código de moneda.")
+    fldCambio: float | None = Field(None, description="Tipo de cambio aplicado.")
+    descripcion_articulo: str | None = Field(None, description="Descripción del artículo.")
+    fldTemporada: str | None = Field(None, description="Temporada del artículo.")
+    fldIdFamilia: str | None = Field(None, description="Código de familia.")
+    fldIdGrupoTallas: str | None = Field(None, description="Código del grupo de tallas.")
+    descripcion_grupo_tallas: str | None = Field(None, description="Descripción del grupo de tallas.")
+
+
+class ComprasPage(BaseModel):
+    """Página de resultados de líneas de compra."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"items": [_COMPRA_EXAMPLE], "count": 1, "limit": 50, "offset": 0}
+        }
+    )
+
+    items: list[CompraOut]
     count: int = Field(..., description="Nº de filas devueltas en esta página.")
     limit: int = Field(..., description="Tamaño de página solicitado.")
     offset: int = Field(..., description="Desplazamiento solicitado.")

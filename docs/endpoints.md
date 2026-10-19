@@ -106,6 +106,46 @@ curl -s "$BASE/api/ventas/ticket/0001/00000207/000001/2072056051" \
 
 ---
 
+## Compras — líneas de compra (`compras_maestro`)
+
+### `GET /api/compras`
+Lista paginada de líneas de compra a proveedor (una fila por artículo-color-talla
+comprado). Ordena por fecha descendente.
+
+| Filtro | Columna | Descripción |
+|--------|---------|-------------|
+| `fecha_desde` | `fecha` | Fecha **mínima** (inclusive), `YYYY-MM-DD`. |
+| `fecha_hasta` | `fecha` | Fecha **máxima** (inclusive), `YYYY-MM-DD`. |
+| `almacen` | `fldIdAlmacen` | Igualdad exacta. |
+| `proveedor` | `fldIdProveedor` | Igualdad exacta. |
+| `articulo` | `fldIdArticulo` | Igualdad exacta. |
+| `color` | `fldIdColor` | Igualdad exacta. |
+| `talla` | `talla` | Igualdad exacta. |
+| `temporada` | `fldTemporada` | Igualdad exacta. |
+| `familia` | `fldIdFamilia` | Igualdad exacta. |
+| `limit`, `offset` | — | Paginación. |
+
+**Rango de fechas:** `fecha_desde` y `fecha_hasta` son independientes; puedes
+usar una, otra o ambas. Ambas incluyen el día indicado.
+
+```bash
+# Compras de junio de 2025 (rango cerrado)
+curl -s "$BASE/api/compras?fecha_desde=2025-06-01&fecha_hasta=2025-06-30&limit=500" \
+  -H "Authorization: Bearer $ACCESS"
+
+# Compras a un proveedor concreto
+curl -s "$BASE/api/compras?proveedor=PROV012" -H "Authorization: Bearer $ACCESS"
+
+# Compras de un artículo en una temporada
+curl -s "$BASE/api/compras?articulo=0100228002&temporada=V25&limit=500" \
+  -H "Authorization: Bearer $ACCESS"
+```
+
+> Nota: para rangos grandes usa `limit` (máx. 500) y pagina con `offset`, o
+> acota con más filtros.
+
+---
+
 ## Variables de los ejemplos
 
 ```bash

@@ -30,6 +30,7 @@ from refresh_tokens import (
     revoke_refresh_token,
     store_refresh_token,
 )
+from routers import compras as compras_router
 from routers import sku as sku_router
 from routers import ventas as ventas_router
 from schemas import RefreshIn, TokenOut
@@ -80,6 +81,7 @@ tags_metadata = [
     {"name": "Autenticación", "description": "Login (usuario + contraseña) que devuelve el token JWT."},
     {"name": "SKU — catálogo", "description": "Referencias del catálogo a nivel artículo-color-talla (tabla `sku`)."},
     {"name": "Ventas — líneas de ticket", "description": "Líneas de venta (tabla `ticket_maestro`); una fila por línea de ticket."},
+    {"name": "Compras — líneas de compra", "description": "Líneas de compra a proveedor (tabla `compras_maestro`); una fila por artículo-color-talla comprado."},
     {"name": "Infra", "description": "Salud del servicio."},
 ]
 
@@ -202,3 +204,4 @@ async def logout(request: Request, body: RefreshIn):
 # ─────────────────────────────────────────────────────────────────────────────
 app.include_router(sku_router.router)
 app.include_router(ventas_router.router)
+app.include_router(compras_router.router)
