@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/skus", tags=["SKU — catálogo"])
     response_model=SkuPage,
     summary="Listar SKUs",
     description="Lista paginada del catálogo, con filtros opcionales por "
-    "artículo, temporada, familia, proveedor, marca, color, talla y texto en la "
+    "artículo, temporada, familia, marca, color, talla y texto en la "
     "descripción. Filtrar por `articulo` (fldIdArticulo) devuelve todas las "
     "permutas color/talla de ese artículo. Ordena por código de SKU.",
     responses=RATE_LIMIT_RESPONSE,
@@ -37,7 +37,6 @@ async def list_skus(
     articulo: str | None = Query(None, max_length=50, description="Filtra por fldIdArticulo: devuelve todas las permutas (color/talla) de ese artículo."),
     temporada: str | None = Query(None, max_length=50, description="Filtra por fldTemporada."),
     familia: str | None = Query(None, max_length=50, description="Filtra por fldIdFamilia."),
-    proveedor: str | None = Query(None, max_length=50, description="Filtra por fldIdProveedor."),
     marca: str | None = Query(None, max_length=50, description="Filtra por fldIdMarca."),
     color: str | None = Query(None, max_length=50, description="Filtra por fldIdColor."),
     talla: str | None = Query(None, max_length=50, description="Filtra por talla."),
@@ -58,9 +57,6 @@ async def list_skus(
     if familia:
         where.append('"fldIdFamilia" = :familia')
         params["familia"] = familia
-    if proveedor:
-        where.append('"fldIdProveedor" = :proveedor')
-        params["proveedor"] = proveedor
     if marca:
         where.append('"fldIdMarca" = :marca')
         params["marca"] = marca
