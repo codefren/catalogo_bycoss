@@ -104,6 +104,44 @@ curl -s "$BASE/api/ventas/ticket/0001/00000207/000001/2072056051" \
   -H "Authorization: Bearer $ACCESS"
 ```
 
+### `GET /api/ventas/cabeceras`
+Lista paginada de **cabeceras** de ticket. Como `ticket_maestro` tiene una fila
+por línea y los totales se repiten idénticos en todas las líneas del mismo
+ticket, este endpoint los **agrega por la clave natural** y devuelve **una sola
+fila por ticket** con sus totales (sin duplicarlos por línea). Ordena por fecha
+descendente.
+
+No incluye operario/cajera ni códigos internos (mismo criterio de las líneas).
+Los totales que expone son: `fldPrendas`, `fldImporteBruto`, `fldImporteDto`,
+`fldImporteNeto`, `fldCobradoTicket`, `fldPteTicket`, `dto_cabecera`, `fldVales`,
+`fldApartados`, `fldArreglos`, `fldPromociones`, `fldChequeRegalo`, `fldCupones`
+y `fldEspecial`, junto a la clave natural, `fecha`, `fldHora`, `fldIdCliente`,
+`fldIdMoneda` y `fldCambio`.
+
+| Filtro | Columna | Descripción |
+|--------|---------|-------------|
+| `fecha_desde` | `fecha` | Fecha **mínima** (inclusive), `YYYY-MM-DD`. |
+| `fecha_hasta` | `fecha` | Fecha **máxima** (inclusive), `YYYY-MM-DD`. |
+| `almacen` | `fldIdAlmacen` | Igualdad exacta. |
+| `cliente` | `fldIdCliente` | Igualdad exacta. |
+| `ticket` | `fldIdTicket` | Igualdad exacta. |
+| `limit`, `offset` | — | Paginación. |
+
+```bash
+# Cabeceras (totales) de julio de 2025
+curl -s "$BASE/api/ventas/cabeceras?fecha_desde=2025-07-01&fecha_hasta=2025-07-31&limit=500" \
+  -H "Authorization: Bearer $ACCESS"
+```
+
+### `GET /api/ventas/cabecera/{empresa}/{almacen}/{caja}/{ticket}`
+La cabecera (totales) de **un** ticket por su clave natural, en una sola fila
+(objeto, no sobre paginado). `404` si el ticket no existe.
+
+```bash
+curl -s "$BASE/api/ventas/cabecera/0001/00000207/000001/2072056051" \
+  -H "Authorization: Bearer $ACCESS"
+```
+
 ---
 
 ## Compras — líneas de compra (`compras_maestro`)

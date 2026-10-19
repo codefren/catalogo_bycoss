@@ -139,3 +139,87 @@ async def get_ticket(
         raise HTTPException(status_code=404, detail="Ticket sin líneas")
     items = [TicketLineaOut(**dict(r)) for r in rows]
     return TicketPage(items=items, count=len(items), limit=len(items), offset=0)
+
+
+@router.get(
+    "/cabeceras",
+    response_model=TicketCabeceraPage,
+    summary="Listar cabeceras de ticket (totales)",
+    description="Lista paginada de cabeceras de ticket: agrega las líneas de "
+    "cada ticket en una sola fila con sus totales (importes, prendas, descuentos), "
+    "sin duplicarlos por línea. Filtros opcionales por rango de fechas, almacén, "
+    "cliente y ticket. Ordena por fecha descendente.",
+    responses=RATE_LIMIT_RESPONSE,
+)
+@limiter.limit(settings.rate_limit)
+async def list_cabeceras(
+    request: Request,
+    limit: int = Query(50, ge=1, le=500, description="Tamaño de página."),
+    offset: int = Query(0, ge=0, description="Desplazamiento."),
+    fecha_desde: date | None = Query(None, description="Fecha mínima (inclusive), formato YYYY-MM-DD."),
+    fecha_hasta: date | None = Query(None, description="Fecha máxima (inclusive), formato YYYY-MM-DD."),
+    almacen: str | None = Query(None, max_length=50, description="Filtra por fldIdAlmacen."),
+    cliente: str | None = Query(None, max_length=50, description="Filtra por fldIdCliente."),
+    ticket: str | None = Query(None, max_length=50, description="Filtra por fldIdTicket."),
+    _: dict = Depends(require_jwt),
+):
+    where: list[str] = []
+    params: dict = {}
+    if fecha_desde:
+        where.append("fecha >= :fecha_desde")
+        params["fecha_desde"] = fecha_desde
+    if fecha_hasta:
+        where.append("fecha <= :fecha_hasta")
+        params["fecha_hasta"] = fecha_hasta
+    if almacen:
+        where.append('"fldIdAlmacen" = :almacen')
+        params["almacen"] = almacen
+    if cliente:
+        where.append('"fldIdCliente" = :cliente')
+        params["cliente"] = cliente
+    if ticket:
+        where.append('"fldIdTicket" = :ticket')
+        params["ticket"] = ticket
+
+    sql = _CABECERA_SELECT
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += _CABECERA_GROUP_BY
+    sql += ' ORDER BY fecha DESC, "fldIdTicket" LIMIT :limit OFFSET :offset'
+    params.update(limit=limit, offset=offset)
+
+    async with engine.connect() as conn:
+        rows = (await conn.execute(text(sql), params)).mappings().all()
+    items = [TicketCabeceraOut(**dict(r)) for r in rows]
+    return TicketCabeceraPage(items=items, count=len(items), limit=limit, offset=offset)
+
+
+@router.get(
+    "/cabecera/{empresa}/{almacen}/{caja}/{ticket}",
+    response_model=TicketCabeceraOut,
+    summary="Cabecera de un ticket (totales)",
+    description="Devuelve la cabecera (totales) de un ticket por su clave natural "
+    "(empresa, almacén, caja, ticket), en una sola fila. `404` si no existe.",
+    responses={404: {"description": "Ticket inexistente"}, **RATE_LIMIT_RESPONSE},
+)
+@limiter.limit(settings.rate_limit)
+async def get_cabecera(
+    request: Request,
+    empresa: str,
+    almacen: str,
+    caja: str,
+    ticket: str,
+    _: dict = Depends(require_jwt),
+):
+    sql = (
+        _CABECERA_SELECT
+        + 'WHERE "fldIdEmpresa" = :empresa AND "fldIdAlmacen" = :almacen '
+        'AND "fldIdCaja" = :caja AND "fldIdTicket" = :ticket'
+        + _CABECERA_GROUP_BY
+    )
+    params = {"empresa": empresa, "almacen": almacen, "caja": caja, "ticket": ticket}
+    async with engine.connect() as conn:
+        row = (await conn.execute(text(sql), params)).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Ticket inexistente")
+    return TicketCabeceraOut(**dict(row))
