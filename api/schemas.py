@@ -93,6 +93,31 @@ _TICKET_EXAMPLE = {
     "fldIVA": 21,
     "actualizado_en": "2025-07-14T23:00:00",
 }
+_CABECERA_EXAMPLE = {
+    "fldIdEmpresa": "0001",
+    "fldIdAlmacen": "00000207",
+    "fldIdCaja": "000001",
+    "fldIdTicket": "2072056051",
+    "fecha": "2025-07-14",
+    "fldHora": "19:26:44",
+    "fldIdCliente": "00000001",
+    "fldIdMoneda": "EUR",
+    "fldCambio": 1,
+    "fldPrendas": 2,
+    "fldImporteBruto": 59.90,
+    "fldImporteDto": 0,
+    "fldImporteNeto": 59.90,
+    "fldCobradoTicket": 59.90,
+    "fldPteTicket": 0,
+    "dto_cabecera": 0,
+    "fldVales": 0,
+    "fldApartados": 0,
+    "fldArreglos": 0,
+    "fldPromociones": 0,
+    "fldChequeRegalo": 0,
+    "fldCupones": 0,
+    "fldEspecial": 0,
+}
 _COMPRA_EXAMPLE = {
     "fldIdEmpresa": "0001",
     "fldIdAlmacen": "00000207",
@@ -203,6 +228,63 @@ class TicketPage(BaseModel):
     )
 
     items: list[TicketLineaOut]
+    count: int = Field(..., description="Nº de filas devueltas en esta página.")
+    limit: int = Field(..., description="Tamaño de página solicitado.")
+    offset: int = Field(..., description="Desplazamiento solicitado.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CABECERA DE TICKET — totales del ticket, UNA fila por ticket.
+#  `ticket_maestro` tiene una fila por LÍNEA y los importes de cabecera se
+#  repiten en todas las líneas del mismo ticket. Aquí se agregan por la clave
+#  natural (ver routers/ventas.py) para exponerlos una sola vez, sin duplicar.
+#  No incluye operario/cajera ni códigos internos (mismo criterio que la línea).
+# ─────────────────────────────────────────────────────────────────────────────
+class TicketCabeceraOut(BaseModel):
+    """Cabecera de un ticket (totales), con una fila por ticket."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": _CABECERA_EXAMPLE},
+    )
+
+    # ── Clave natural y datos de cabecera ────────────────────────────────────
+    fldIdEmpresa: str | None = Field(None, description="Código de empresa.")
+    fldIdAlmacen: str | None = Field(None, description="Código de almacén/tienda.")
+    fldIdCaja: str | None = Field(None, description="Código de caja/TPV.")
+    fldIdTicket: str | None = Field(None, description="Número de ticket.")
+    fecha: date | None = Field(None, description="Fecha del ticket.")
+    fldHora: str | None = Field(None, description="Hora del ticket.")
+    fldIdCliente: str | None = Field(None, description="Código de cliente.")
+    fldIdMoneda: str | None = Field(None, description="Código de moneda.")
+    fldCambio: float | None = Field(None, description="Tipo de cambio aplicado.")
+    # ── Totales del ticket (una sola vez por ticket) ─────────────────────────
+    fldPrendas: float | None = Field(None, description="Nº de prendas del ticket.")
+    fldImporteBruto: float | None = Field(None, description="Importe bruto del ticket.")
+    fldImporteDto: float | None = Field(None, description="Descuento del ticket.")
+    fldImporteNeto: float | None = Field(None, description="Importe neto del ticket.")
+    fldCobradoTicket: float | None = Field(None, description="Importe cobrado.")
+    fldPteTicket: float | None = Field(None, description="Importe pendiente.")
+    dto_cabecera: float | None = Field(None, description="Descuento de cabecera.")
+    fldVales: int | None = Field(None, description="Nº de vales.")
+    fldApartados: int | None = Field(None, description="Nº de apartados.")
+    fldArreglos: int | None = Field(None, description="Nº de arreglos.")
+    fldPromociones: int | None = Field(None, description="Nº de promociones.")
+    fldChequeRegalo: int | None = Field(None, description="Nº de cheques regalo.")
+    fldCupones: float | None = Field(None, description="Importe de cupones.")
+    fldEspecial: float | None = Field(None, description="Importe especial.")
+
+
+class TicketCabeceraPage(BaseModel):
+    """Página de resultados de cabeceras de ticket."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"items": [_CABECERA_EXAMPLE], "count": 1, "limit": 50, "offset": 0}
+        }
+    )
+
+    items: list[TicketCabeceraOut]
     count: int = Field(..., description="Nº de filas devueltas en esta página.")
     limit: int = Field(..., description="Tamaño de página solicitado.")
     offset: int = Field(..., description="Desplazamiento solicitado.")

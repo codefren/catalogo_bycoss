@@ -13,11 +13,45 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import text
 
 from db import engine
-from schemas import TicketLineaOut, TicketPage
+from schemas import TicketCabeceraOut, TicketCabeceraPage, TicketLineaOut, TicketPage
 from security import RATE_LIMIT_RESPONSE, limiter, require_jwt
 from settings import settings
 
 router = APIRouter(prefix="/api/ventas", tags=["Ventas — líneas de ticket"])
+
+# Cabecera del ticket: `ticket_maestro` tiene una fila por línea y los importes
+# de cabecera se repiten idénticos en cada línea del mismo ticket. Se agregan
+# por la clave natural (MAX() = valor constante del ticket) para devolverlos una
+# sola vez. No se exponen operario/cajera ni códigos internos (igual que la
+# línea). Columnas camelCase entrecomilladas; `fecha`/`dto_cabecera` no.
+_CABECERA_SELECT = """
+SELECT
+    "fldIdEmpresa",
+    "fldIdAlmacen",
+    "fldIdCaja",
+    "fldIdTicket",
+    MAX(fecha)              AS fecha,
+    MAX("fldHora")          AS "fldHora",
+    MAX("fldIdCliente")     AS "fldIdCliente",
+    MAX("fldIdMoneda")      AS "fldIdMoneda",
+    MAX("fldCambio")        AS "fldCambio",
+    MAX("fldPrendas")       AS "fldPrendas",
+    MAX("fldImporteBruto")  AS "fldImporteBruto",
+    MAX("fldImporteDto")    AS "fldImporteDto",
+    MAX("fldImporteNeto")   AS "fldImporteNeto",
+    MAX("fldCobradoTicket") AS "fldCobradoTicket",
+    MAX("fldPteTicket")     AS "fldPteTicket",
+    MAX(dto_cabecera)       AS dto_cabecera,
+    MAX("fldVales")         AS "fldVales",
+    MAX("fldApartados")     AS "fldApartados",
+    MAX("fldArreglos")      AS "fldArreglos",
+    MAX("fldPromociones")   AS "fldPromociones",
+    MAX("fldChequeRegalo")  AS "fldChequeRegalo",
+    MAX("fldCupones")       AS "fldCupones",
+    MAX("fldEspecial")      AS "fldEspecial"
+FROM ticket_maestro
+"""
+_CABECERA_GROUP_BY = ' GROUP BY "fldIdEmpresa", "fldIdAlmacen", "fldIdCaja", "fldIdTicket"'
 
 
 @router.get(
