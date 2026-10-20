@@ -59,6 +59,7 @@ _SKU_EXAMPLE = {
     "fldTemporada": "V25",
     "fldIdFamilia": "CAM",
     "fldReferencia": "REF-55120",
+    "codigo_barras": "8412345678905",
     "fldColeccion": "Primavera-Verano 2025",
     "fldIdMarca": "BYC",
     "fldIdColor": "05",
@@ -156,6 +157,7 @@ class SkuOut(BaseModel):
     fldTemporada: str | None = Field(None, description="Temporada del artículo.")
     fldIdFamilia: str | None = Field(None, description="Código de familia.")
     fldReferencia: str | None = Field(None, description="Referencia del proveedor/fabricante.")
+    codigo_barras: str | None = Field(None, description="Código de barras (EAN) del SKU.")
     fldColeccion: str | None = Field(None, description="Colección.")
     fldIdMarca: str | None = Field(None, description="Código de marca.")
     fldIdColor: str | None = Field(None, description="Código de color.")
