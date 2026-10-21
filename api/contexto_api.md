@@ -222,6 +222,9 @@ Lista **completa** (sin paginar) de almacenes: `fldIdAlmacen` y
 `almacen_descripcion`, ordenados por código. Úsala para poner nombre a un
 `fldIdAlmacen` de cualquier otro endpoint.
 
+Algunos almacenes no tienen descripción y vienen con `almacen_descripcion: null`
+(p. ej. `00000000`, `00000036`, `00000999`, `00001234`): muestra el código.
+
 ### 5.5 Ventas — `GET /api/ventas`
 
 Una fila por **línea de ticket**. Orden: fecha desc, ticket, línea, empresa, almacén, caja.
@@ -337,6 +340,8 @@ Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si 
    margen, proveedor del SKU, empleado…), la API no lo ofrece.
 9. **El stock puede ser negativo** (en `/api/skus` y `/api/stock`);
    `con_stock=true` solo deja stock > 0.
+10. **Hay almacenes sin descripción** (`almacen_descripcion: null`): no
+    inventes el nombre, muestra el `fldIdAlmacen`.
 
 ## 8. Ejemplo completo (Python)
 

@@ -196,6 +196,10 @@ ordenados por código. **No pagina**: devuelve la lista completa en el sobre
 habitual, con `limit == count` y `offset == 0`. Sirve para traducir el
 `fldIdAlmacen` de cualquier otro endpoint a su nombre.
 
+Algunos almacenes no tienen descripción en el origen y salen con
+`almacen_descripcion: null` (p. ej. `00000000`, `00000036`, `00000999`,
+`00001234`). Muestra el código en esos casos.
+
 ```bash
 curl -s "$BASE/api/stock/almacenes" -H "Authorization: Bearer $ACCESS"
 ```
