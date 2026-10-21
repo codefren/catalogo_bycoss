@@ -29,7 +29,7 @@ router = APIRouter(prefix="/api/compras", tags=["Compras — líneas de compra"]
     "familia. Ordena por fecha descendente.",
     responses=RATE_LIMIT_RESPONSE,
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def list_compras(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Tamaño de página."),

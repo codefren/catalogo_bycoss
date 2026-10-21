@@ -116,11 +116,7 @@ app = FastAPI(
         "revoca el refresh usado y te da otro. `POST /auth/logout` lo revoca.\n\n"
         "En Swagger: pulsa **Authorize** (arriba), introduce usuario y "
         "contraseña y listo.\n\n"
-        f"**Límite de peticiones (rate limiting):** máximo **{settings.rate_limit}** "
-        "por IP y por endpoint. Al superarlo, la API "
-        "responde `429 Too Many Requests`. El valor se configura con la variable "
-        "de entorno `RATE_LIMIT` (formato de slowapi, p. ej. `60/minute`, "
-        "`1/second`, `1000/hour`)."
+        "**Uso recomendado:** hasta **1080 peticiones por minuto**."
     ),
     openapi_tags=tags_metadata,
     contact={"name": "Soporte catálogo", "email": "efrenoscar6@gmail.com"},
@@ -182,7 +178,7 @@ async def health():
     "`refresh_token` (7 d). Usa el access como `Authorization: Bearer <token>`.",
     responses={401: {"description": "Usuario o contraseña incorrectos"}, **RATE_LIMIT_RESPONSE},
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
     user = await get_user(form.username)
     if (
@@ -208,7 +204,7 @@ async def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
     "refresh está revocado, caducado o el usuario ya no está activo.",
     responses={401: {"description": "Refresh token inválido, revocado o expirado"}, **RATE_LIMIT_RESPONSE},
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def refresh(request: Request, body: RefreshIn):
     # Rotación: valida y revoca el refresh usado en una sola sentencia, así dos
     # peticiones simultáneas con el mismo token no pueden canjearlo las dos.
@@ -229,7 +225,7 @@ async def refresh(request: Request, body: RefreshIn):
     "token sigue siendo válido hasta que caduque (máx. 12 h).",
     responses=RATE_LIMIT_RESPONSE,
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def logout(request: Request, body: RefreshIn):
     await revoke_refresh_token(body.refresh_token)
     return {"detail": "Refresh token revocado"}

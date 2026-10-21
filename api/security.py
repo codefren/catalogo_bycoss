@@ -22,13 +22,15 @@ from slowapi.util import get_remote_address
 from settings import settings
 
 # Un único limiter para toda la app. El estado se engancha en main.py
-# (app.state.limiter = limiter).
+# (app.state.limiter = limiter). Los endpoints usan
+# shared_limit(..., scope="global"): un solo contador por IP para toda la API,
+# así RATE_LIMIT es el total por minuto y no el de cada endpoint.
 limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit])
 
 # Respuesta 429 documentada en Swagger para los endpoints con rate limit.
 # Se añade a `responses=` de cada endpoint de datos.
 RATE_LIMIT_RESPONSE = {
-    429: {"description": f"Límite de peticiones superado ({settings.rate_limit} por IP)."}
+    429: {"description": "Demasiadas peticiones."}
 }
 
 # Esquema OAuth2 password: en Swagger muestra el diálogo "Authorize" con

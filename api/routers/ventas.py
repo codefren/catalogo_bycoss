@@ -63,7 +63,7 @@ _CABECERA_GROUP_BY = ' GROUP BY "fldIdEmpresa", "fldIdAlmacen", "fldIdCaja", "fl
     "descendente.",
     responses=RATE_LIMIT_RESPONSE,
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def list_ventas(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Tamaño de página."),
@@ -122,7 +122,7 @@ async def list_ventas(
     "clave natural (empresa, almacén, caja, ticket), ordenadas por línea.",
     responses={404: {"description": "Ticket sin líneas"}, **RATE_LIMIT_RESPONSE},
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def get_ticket(
     request: Request,
     empresa: str,
@@ -156,7 +156,7 @@ async def get_ticket(
     "cliente y ticket. Ordena por fecha descendente.",
     responses=RATE_LIMIT_RESPONSE,
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def list_cabeceras(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Tamaño de página."),
@@ -211,7 +211,7 @@ async def list_cabeceras(
     "(empresa, almacén, caja, ticket), en una sola fila. `404` si no existe.",
     responses={404: {"description": "Ticket inexistente"}, **RATE_LIMIT_RESPONSE},
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def get_cabecera(
     request: Request,
     empresa: str,

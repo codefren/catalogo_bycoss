@@ -46,6 +46,9 @@ docker exec -i cat-test-pg psql -U catalogo -d catalogo < stress/indices.sql
 | Producción, estado actual | ~6 req/s (9 objetivo) | **36 s** | **26 %** |
 | Producción con índices | 9 req/s | 296 ms | 23 % (todo `429` en `/api/skus`; resto 0 %) |
 | Producción con índices y `RATE_LIMIT=300/minute` | 9 req/s | 417 ms | 0 % |
+| Producción, rampa (sin rate limit) | 18 req/s (1.080/min) | 423 ms | 0 % — estable |
+| Producción, rampa (sin rate limit) | 27 req/s (1.620/min) | 2,8 s | 0 % — latencia creciente (450 → 930 ms) |
+| Producción, rampa (sin rate limit) | 36 req/s (2.160/min) | 12 s | 0 %, 177 iteraciones descartadas — saturada; `/api/skus*` se degrada primero |
 | Local sin índices | 9 req/s | 455 ms | 0 % |
 | Local sin índices | 27 req/s objetivo (alcanzó 16) | 20 s | 0 % (iteraciones descartadas) |
 | Local con índices | 9 req/s | 54 ms | 0 % |

@@ -57,7 +57,7 @@ FROM cajas_pendientes
     "envío y albarán. Ordena por fecha de salida descendente.",
     responses=RATE_LIMIT_RESPONSE,
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def list_cajas_pendientes(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Tamaño de página."),
@@ -124,7 +124,7 @@ async def list_cajas_pendientes(
     "ordenadas por artículo y talla.",
     responses={404: {"description": "Caja sin líneas"}, **RATE_LIMIT_RESPONSE},
 )
-@limiter.limit(settings.rate_limit)
+@limiter.shared_limit(settings.rate_limit, scope="global")
 async def get_caja(
     request: Request,
     codigo_caja: str,

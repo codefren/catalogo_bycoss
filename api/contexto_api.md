@@ -81,12 +81,10 @@ Trata cualquier campo como opcional.
 | `401` | Falta token, token inválido/expirado, login incorrecto | `{"detail": "..."}` |
 | `404` | Recurso concreto inexistente (SKU, ticket, caja) | `{"detail": "..."}` |
 | `422` | Parámetro inválido (tipo, rango, valor no permitido) | `{"detail": [ ... ]}` o `{"detail": "..."}` |
-| `429` | Rate limit superado | `{"detail": "Demasiadas peticiones"}` |
 
-### Rate limit
-**300 peticiones por minuto por IP y por endpoint** (configurable en servidor).
-Al superarlo, `429`: espera unos segundos y reintenta. Prefiere pocas
-peticiones con `limit=500` y filtros precisos antes que muchas pequeñas.
+### Uso recomendado
+Hasta **1080 peticiones por minuto**. Prefiere pocas peticiones con `limit=500`
+y filtros precisos antes que muchas pequeñas.
 
 ## 4. Modelo de datos y relaciones
 

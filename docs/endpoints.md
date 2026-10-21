@@ -74,8 +74,7 @@ Ten en cuenta:
   `/api/cajas-pendientes/caja/{codigo_caja}`) devuelven todas las filas de una vez, no
   aceptan `limit`/`offset` y en su sobre `limit == count`, `offset == 0`.
 
-Todos los endpoints están sujetos al **rate limit** por IP (`300/minute` por
-defecto); al superarlo devuelven `429`.
+**Uso recomendado:** hasta **1080 peticiones por minuto**.
 
 ---
 
