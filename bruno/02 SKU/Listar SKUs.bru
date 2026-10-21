@@ -35,7 +35,7 @@ tests {
   });
   test("no expone campos sensibles", function () {
     for (const it of res.body.items) {
-      expect(it).to.not.have.any.keys("precio_costo", "fldIdProveedor");
+      expect(it).to.not.have.any.keys("fldIdProveedor");
     }
   });
 }

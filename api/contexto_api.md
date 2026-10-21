@@ -141,12 +141,13 @@ filas.
 | `fldIdGrupoTallas` | string | Código del grupo de tallas. |
 | `grupotalla_descripcion` | string | Descripción del grupo de tallas. |
 | `talla` | string | Talla. |
-| `pvp` | number | Precio de venta al público. |
+| `pvp` | number | Precio de venta al público (con IVA). |
+| `precio_costo` | number | Coste unitario **actual** (sin histórico; sin IVA). |
 | `stock_disponible` | number | Stock disponible **en este almacén**. |
 | `actualizado_en` | datetime | Última actualización (sin zona horaria). |
 
-No se exponen (no los pidas ni los inventes): coste, proveedor, mínimos/máximos
-de stock, punto de pedido, totales de entradas/salidas.
+No se exponen (no los pidas ni los inventes): proveedor, mínimos/máximos de
+stock, punto de pedido, totales de entradas/salidas.
 
 **Filtros**. Los marcados *(rep.)* aceptan **varios valores** repitiendo el
 parámetro (`?almacen=A&almacen=B`), combinados con **OR**, máx. 50 valores.
@@ -321,6 +322,7 @@ Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si 
 | ¿Qué se compró a un proveedor? | `GET /api/compras?proveedor=P&fecha_desde=…` |
 | ¿Qué le llega a una tienda? | `GET /api/cajas-pendientes?tienda=T&limit=500`; agrupa por `codigo_caja`. |
 | ¿Viene en camino un producto? | `GET /api/cajas-pendientes?ean=EAN` (o `articulo=X`). |
+| ¿Margen de un periodo? | Líneas de `/api/ventas` + `precio_costo` de `/api/skus` (cruza por almacén, artículo, color y talla; en ventas `fldTalla`). Venta sin IVA = `importe_linea / (1 + fldIVA/100)`; coste = `fldCantidad × precio_costo`; margen = venta sin IVA − coste. El coste es el actual: en periodos antiguos es aproximado. |
 | ¿Qué cambió en el catálogo desde ayer? | `GET /api/skus?actualizado_desde=<ISO>&orden=actualizado&limit=500`, paginando. |
 
 ## 7. Trampas frecuentes
@@ -337,7 +339,8 @@ Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si 
 7. **Fechas de cajas pendientes son texto**; las de ventas/compras son `date` y
    `actualizado_en` es datetime sin zona horaria.
 8. **Solo existen los campos documentados**: si un dato no aparece aquí (coste,
-   margen, proveedor del SKU, empleado…), la API no lo ofrece.
+   proveedor del SKU, empleado…), la API no lo ofrece. El margen no viene
+   calculado: obténlo como se explica en la receta de márgenes.
 9. **El stock puede ser negativo** (en `/api/skus` y `/api/stock`);
    `con_stock=true` solo deja stock > 0.
 10. **Hay almacenes sin descripción** (`almacen_descripcion: null`): no

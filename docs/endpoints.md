@@ -87,9 +87,13 @@ una vez por cada almacén (`fldIdAlmacen`) que lo tenga.
 Campos devueltos: `sku`, `fldIdAlmacen`, `fldIdArticulo`, `articulo_descripcion`,
 `fldTemporada`, `fldIdFamilia`, `fldReferencia`, `codigo_barras`, `fldColeccion`,
 `fldIdMarca`, `fldIdColor`, `color_descripcion`, `fldIdGrupoTallas`,
-`grupotalla_descripcion`, `talla`, `pvp`, `stock_disponible`, `actualizado_en`.
-(No se exponen coste, proveedor, parámetros de reposición ni totales de
-movimiento.)
+`grupotalla_descripcion`, `talla`, `pvp`, `precio_costo`, `stock_disponible`,
+`actualizado_en`. (No se exponen proveedor, parámetros de reposición ni totales
+de movimiento.)
+
+`precio_costo` es el coste unitario **actual** del SKU (no hay histórico): sirve
+para calcular márgenes, pero en periodos pasados es una aproximación si el coste
+ha cambiado. Ver [Márgenes](#márgenes) más abajo.
 
 ### `GET /api/skus`
 Lista paginada. Todos los filtros son opcionales y se combinan con **AND**. Los
@@ -144,6 +148,26 @@ paginado que el listado). `almacen` (*repetible*) limita a esos almacenes.
 curl -s "$BASE/api/skus/0100228002-000005-U" -H "Authorization: Bearer $ACCESS"
 curl -s "$BASE/api/skus/0100228002-000005-U?almacen=00000207" -H "Authorization: Bearer $ACCESS"
 ```
+
+### Márgenes
+
+La API no calcula márgenes: se obtienen cruzando las líneas de venta con el
+coste del catálogo.
+
+1. Descarga las líneas de `/api/ventas` del periodo.
+2. Para cada línea, busca el coste en `/api/skus` por `fldIdAlmacen` +
+   `fldIdArticulo` + `fldIdColor` + `talla` (en ventas la talla es `fldTalla`).
+   Ojo: el `sku` del catálogo lleva el almacén delante
+   (`00000207-0100228002-000005-U`) y el de ventas no (`0100228002-000005-U`).
+3. Por línea:
+   - venta sin IVA = `importe_linea / (1 + fldIVA / 100)` (el importe de venta
+     incluye IVA; el coste no).
+   - coste = `fldCantidad × precio_costo`.
+   - margen = venta sin IVA − coste; margen % = margen / venta sin IVA.
+
+Limitaciones: `precio_costo` es el coste actual (en periodos antiguos es
+aproximado) y las líneas cuyo SKU no está en el catálogo o tiene coste `null` o
+0 quedan sin coste: exclúyelas y di cuántas son.
 
 ---
 

@@ -69,6 +69,7 @@ _SKU_EXAMPLE = {
     "grupotalla_descripcion": "Tallas S-XXL",
     "talla": "M",
     "pvp": 29.95,
+    "precio_costo": 11.40,
     "stock_disponible": 23,
     "actualizado_en": "2025-10-14T02:11:00",
 }
@@ -179,6 +180,7 @@ class SkuOut(BaseModel):
     grupotalla_descripcion: str | None = Field(None, description="Descripción del grupo de tallas.")
     talla: str | None = Field(None, description="Talla.")
     pvp: float | None = Field(None, description="Precio de venta al público.")
+    precio_costo: float | None = Field(None, description="Precio de coste unitario (coste actual, no histórico).")
     stock_disponible: float | None = Field(None, description="Stock disponible en este almacén.")
     actualizado_en: datetime | None = Field(None, description="Última actualización del registro.")
 

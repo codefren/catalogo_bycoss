@@ -9,7 +9,7 @@ Las columnas en minúscula (`sku`, `talla`, `articulo_descripcion`, `pvp`, …) 
 necesitan comillas.
 
 SELECT explícito (nunca `SELECT *`): solo salen de la base las columnas que se
-exponen. Quedan fuera, por sensibles o internas: precio_costo, proveedor,
+exponen. Quedan fuera, por sensibles o internas: proveedor,
 parámetros de reposición (mínimo/máximo/punto de pedido), totales de movimiento
 (entradas/salidas/servicio/tránsito) y códigos sin descripción (sexo, grupo,
 subgrupo, subfamilia, temporada de venta).
@@ -49,6 +49,7 @@ SELECT
     grupotalla_descripcion,
     talla,
     pvp,
+    precio_costo,
     stock_disponible,
     actualizado_en
 FROM sku
