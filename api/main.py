@@ -19,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
@@ -26,7 +27,7 @@ from sqlalchemy import text
 from db import engine
 from refresh_tokens import (
     REFRESH_DDL,
-    resolve_refresh_token,
+    consume_refresh_token,
     revoke_refresh_token,
     store_refresh_token,
 )
@@ -119,7 +120,9 @@ app.state.limiter = limiter
 
 @app.exception_handler(RateLimitExceeded)
 async def _ratelimit_handler(request: Request, exc: RateLimitExceeded):
-    raise HTTPException(status_code=429, detail="Demasiadas peticiones")
+    # Hay que DEVOLVER la respuesta: una excepción lanzada desde un exception
+    # handler no la captura nadie y acabaría en un 500.
+    return JSONResponse(status_code=429, content={"detail": "Demasiadas peticiones"})
 
 
 if settings.cors_list:
@@ -176,15 +179,15 @@ async def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
 )
 @limiter.limit(settings.rate_limit)
 async def refresh(request: Request, body: RefreshIn):
-    data = await resolve_refresh_token(body.refresh_token)
-    if data is None:
+    # Rotación: valida y revoca el refresh usado en una sola sentencia, así dos
+    # peticiones simultáneas con el mismo token no pueden canjearlo las dos.
+    username = await consume_refresh_token(body.refresh_token)
+    if username is None:
         raise HTTPException(status_code=401, detail="Refresh token inválido o expirado")
-    user = await get_user(data["username"])
+    user = await get_user(username)
     if user is None or not user["activo"]:
         raise HTTPException(status_code=401, detail="Usuario inactivo o inexistente")
-    # Rotación: el refresh usado se revoca y se emite uno nuevo.
-    await revoke_refresh_token(body.refresh_token)
-    return await _issue_tokens(data["username"])
+    return await _issue_tokens(username)
 
 
 @app.post(

@@ -17,7 +17,7 @@ Los listados devuelven un **sobre paginado**:
 - `offset`: desplazamiento (paginación).
 - `count`: nº de filas devueltas en esta página.
 
-Todos los endpoints están sujetos al **rate limit** por IP (`60/minute` por
+Todos los endpoints están sujetos al **rate limit** por IP (`300/minute` por
 defecto); al superarlo devuelven `429`.
 
 ---

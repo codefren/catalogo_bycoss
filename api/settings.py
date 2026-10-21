@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     cors_origins: str = ""
 
     # Límite de peticiones por clave/IP (formato de slowapi).
-    rate_limit: str = "60/minute"
+    rate_limit: str = "300/minute"
 
     # ── JWT ──────────────────────────────────────────────────────────────────
     # Secreto para firmar los tokens (HS256). OBLIGATORIO: sin él la API no

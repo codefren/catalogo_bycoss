@@ -44,7 +44,7 @@ Notas de seguridad:
 | `GET`  | `/health` | — | Salud del servicio (sin auth). |
 
 Todos los `/api/*` y los `/auth/*` están sujetos al **rate limit** por IP
-(`RATE_LIMIT`, por defecto `60/minute`); al superarlo responden `429`.
+(`RATE_LIMIT`, por defecto `300/minute`); al superarlo responden `429`.
 
 ---
 
@@ -135,7 +135,7 @@ docker compose exec api python create_user.py bycos 'CUALQUIERA' --inactivo
 | `JWT_SECRET` | **Sí** | — | Secreto para firmar los JWT. Genera: `openssl rand -hex 32`. |
 | `ACCESS_TOKEN_EXPIRE_HOURS` | No | `12` | Caducidad del access token (horas). |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | No | `7` | Caducidad del refresh token (días). |
-| `RATE_LIMIT` | No | `60/minute` | Límite de peticiones por IP (formato slowapi). |
+| `RATE_LIMIT` | No | `300/minute` | Límite de peticiones por IP (formato slowapi). |
 | `CORS_ORIGINS` | No | vacío | Orígenes CORS permitidos (coma). Nunca `*` en prod. |
 | `DATABASE_URL` | **Sí** | — | Conexión a Postgres (`postgresql+asyncpg://...`). |
 

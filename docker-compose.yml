@@ -67,7 +67,12 @@ services:
       # La API habla con Postgres por la red privada (nombre del servicio).
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-catalogo}:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}@postgres:5432/${POSTGRES_DB:-catalogo}"
       CORS_ORIGINS: "${CORS_ORIGINS:-}"
-      RATE_LIMIT: "${RATE_LIMIT:-60/minute}"
+      RATE_LIMIT: "${RATE_LIMIT:-300/minute}"
+      # Proxies de confianza para X-Forwarded-For (IP real del cliente para el
+      # rate limit). "*" es aceptable porque la API no publica puertos: solo la
+      # alcanzan contenedores de catalogo-net/edge (Caddy). Si en `edge` hay
+      # otros contenedores, pon aquí la IP/subred de Caddy.
+      FORWARDED_ALLOW_IPS: "${FORWARDED_ALLOW_IPS:-*}"
       # Firma de los JWT (obligatorio) y caducidad del token.
       JWT_SECRET: "${JWT_SECRET:?define JWT_SECRET en .env}"
       ACCESS_TOKEN_EXPIRE_HOURS: "${ACCESS_TOKEN_EXPIRE_HOURS:-12}"

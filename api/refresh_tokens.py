@@ -8,7 +8,7 @@ Tabla:
     api_refresh_tokens(token_hash PK, username, expira_en, revocado, creado_en)
 """
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import text
 
@@ -42,26 +42,25 @@ async def store_refresh_token(username: str, token: str, expira_en: datetime) ->
         )
 
 
-async def resolve_refresh_token(token: str) -> dict | None:
-    """Devuelve {username} si el token existe, NO está revocado y NO ha caducado.
+async def consume_refresh_token(token: str) -> str | None:
+    """Canjea el token: si existe, NO está revocado y NO ha caducado, lo revoca y
+    devuelve su username. En cualquier otro caso devuelve None.
 
-    En cualquier otro caso devuelve None.
+    Comprobar y revocar van en el mismo UPDATE (atómico): si llegan dos
+    peticiones a la vez con el mismo token, solo una obtiene la fila.
     """
-    async with engine.connect() as conn:
+    async with engine.begin() as conn:
         row = (
             await conn.execute(
                 text(
-                    "SELECT username, expira_en, revocado "
-                    "FROM api_refresh_tokens WHERE token_hash = :h"
+                    "UPDATE api_refresh_tokens SET revocado = TRUE "
+                    "WHERE token_hash = :h AND NOT revocado AND expira_en > now() "
+                    "RETURNING username"
                 ),
                 {"h": _hash(token)},
             )
-        ).mappings().first()
-    if row is None or row["revocado"]:
-        return None
-    if row["expira_en"] <= datetime.now(timezone.utc):
-        return None
-    return {"username": row["username"]}
+        ).first()
+    return row[0] if row else None
 
 
 async def revoke_refresh_token(token: str) -> None:
