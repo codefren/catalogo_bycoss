@@ -109,4 +109,18 @@ SELECT 'C1', lpad((200 + i % 20)::text, 8, '0'), 'Tienda ' || (i % 20), 'DN-' ||
        lpad((1 + i % 5000)::text, 10, '0'), '000001', 'M', 'Artículo', 'Color', 'BYC', 'CAM', 'Camisetas', '1'
 FROM generate_series(1, 20000) i;
 
+CREATE TABLE stock (
+    "fldIdAlmacen" text, almacen_descripcion text, "fldIdArticulo" text, "fldIdColor" text,
+    talla text, total_entradas double precision, total_salidas double precision,
+    total_servicio double precision, total_transito double precision,
+    stock_disponible double precision, actualizado_en timestamp without time zone NOT NULL
+);
+
+INSERT INTO stock
+SELECT lpad((200 + i % 20)::text, 8, '0'), 'Tienda ' || (200 + i % 20),
+       lpad((1 + (i / 20) % 5000)::text, 10, '0'), lpad((1 + (i / 100000) % 5)::text, 6, '0'),
+       (ARRAY['S','M','L','XL','U'])[1 + (i / 20) / 5000 % 5], 10, 5, 0, 0, (i % 25) - 3,
+       now() - (i % 30) * interval '1 day'
+FROM generate_series(0, 249999) i;
+
 ANALYZE;

@@ -35,6 +35,7 @@ from refresh_tokens import (
 from routers import cajas as cajas_router
 from routers import compras as compras_router
 from routers import sku as sku_router
+from routers import stock as stock_router
 from routers import ventas as ventas_router
 from schemas import RefreshIn, TokenOut
 from security import (
@@ -83,6 +84,7 @@ async def _issue_tokens(username: str) -> TokenOut:
 tags_metadata = [
     {"name": "Autenticación", "description": "Login (usuario + contraseña) que devuelve el token JWT."},
     {"name": "SKU — catálogo", "description": "Referencias del catálogo a nivel artículo-color-talla y almacén (tabla `sku`); una fila por SKU y almacén."},
+    {"name": "Stock por almacén", "description": "Stock por artículo-color-talla y almacén, con la descripción del almacén (tabla `stock`). Incluye la lista de almacenes (`/api/stock/almacenes`)."},
     {"name": "Ventas — líneas de ticket", "description": "Líneas de venta (tabla `ticket_maestro`); una fila por línea de ticket. Incluye también las **cabeceras** (`/api/ventas/cabeceras`), que agregan los totales de cada ticket en una sola fila."},
     {"name": "Compras — líneas de compra", "description": "Líneas de compra a proveedor (tabla `compras_maestro`); una fila por artículo-color-talla comprado."},
     {"name": "Cajas pendientes", "description": "Líneas de cajas/envíos pendientes de llegada a tienda (tabla `cajas_pendientes`); claves normalizadas a snake_case."},
@@ -99,8 +101,8 @@ app = FastAPI(
     version="1.3.0",
     lifespan=lifespan,
     description=(
-        "Consulta de **solo lectura** del catálogo (SKUs, ventas, compras y "
-        "cajas pendientes).\n\n"
+        "Consulta de **solo lectura** del catálogo (SKUs, stock por almacén, "
+        "ventas, compras y cajas pendientes).\n\n"
         "📄 **Contexto completo para asistentes (Claude / LLM):** "
         "[`/contexto-api.md`](/contexto-api.md). Markdown con todos los endpoints, "
         "filtros, campos, relaciones entre tablas, recetas y trampas habituales. "
@@ -235,6 +237,7 @@ async def logout(request: Request, body: RefreshIn):
 #  Routers de las tablas reales del catálogo
 # ─────────────────────────────────────────────────────────────────────────────
 app.include_router(sku_router.router)
+app.include_router(stock_router.router)
 app.include_router(ventas_router.router)
 app.include_router(compras_router.router)
 app.include_router(cajas_router.router)

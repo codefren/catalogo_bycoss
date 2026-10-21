@@ -1,0 +1,42 @@
+meta {
+  name: Listar stock
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/stock?limit=100&offset=0
+  body: none
+  auth: inherit
+}
+
+params:query {
+  limit: 100
+  offset: 0
+  ~articulo: {{articulo}}
+  ~almacen: {{almacen}}
+  ~almacen_nombre: centro
+  ~con_stock: true
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("sobre paginado", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.count).to.be.at.most(res.body.limit);
+  });
+  test("trae almacén con descripción", function () {
+    for (const it of res.body.items) {
+      expect(it).to.have.all.keys("fldIdAlmacen", "almacen_descripcion", "fldIdArticulo",
+        "fldIdColor", "talla", "stock_disponible", "actualizado_en");
+    }
+  });
+}
+
+docs {
+  Stock por artículo-color-talla y almacén, con la descripción del almacén.
+  Activa los parámetros desactivados (`~`) en la pestaña *Params* para filtrar.
+}

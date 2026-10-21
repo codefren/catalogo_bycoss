@@ -73,6 +73,16 @@ _SKU_EXAMPLE = {
     "actualizado_en": "2025-10-14T02:11:00",
 }
 
+_STOCK_EXAMPLE = {
+    "fldIdAlmacen": "00000207",
+    "almacen_descripcion": "TIENDA CENTRO",
+    "fldIdArticulo": "001234",
+    "fldIdColor": "05",
+    "talla": "M",
+    "stock_disponible": 23,
+    "actualizado_en": "2025-10-14T02:11:00",
+}
+
 _TICKET_EXAMPLE = {
     "fldIdEmpresa": "0001",
     "fldIdAlmacen": "00000207",
@@ -186,6 +196,71 @@ class SkuPage(BaseModel):
     count: int = Field(..., description="Nº de filas devueltas en esta página.")
     limit: int = Field(..., description="Tamaño de página solicitado.")
     offset: int = Field(..., description="Desplazamiento solicitado.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  STOCK — stock por almacén. Grano: una fila por artículo-color-talla y almacén.
+# ─────────────────────────────────────────────────────────────────────────────
+class StockOut(BaseModel):
+    """Stock de un artículo-color-talla en un almacén."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": _STOCK_EXAMPLE},
+    )
+
+    fldIdAlmacen: str | None = Field(None, description="Código de almacén/tienda.")
+    almacen_descripcion: str | None = Field(None, description="Descripción (nombre) del almacén/tienda.")
+    fldIdArticulo: str | None = Field(None, description="Código de artículo.")
+    fldIdColor: str | None = Field(None, description="Código de color.")
+    talla: str | None = Field(None, description="Talla.")
+    stock_disponible: float | None = Field(None, description="Stock disponible en este almacén (puede ser negativo).")
+    actualizado_en: datetime | None = Field(None, description="Última actualización del registro.")
+
+
+class StockPage(BaseModel):
+    """Página de resultados de stock."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"items": [_STOCK_EXAMPLE], "count": 1, "limit": 50, "offset": 0}
+        }
+    )
+
+    items: list[StockOut]
+    count: int = Field(..., description="Nº de filas devueltas en esta página.")
+    limit: int = Field(..., description="Tamaño de página solicitado.")
+    offset: int = Field(..., description="Desplazamiento solicitado.")
+
+
+class AlmacenOut(BaseModel):
+    """Un almacén/tienda con su descripción."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": {"fldIdAlmacen": "00000207", "almacen_descripcion": "TIENDA CENTRO"}},
+    )
+
+    fldIdAlmacen: str | None = Field(None, description="Código de almacén/tienda.")
+    almacen_descripcion: str | None = Field(None, description="Descripción (nombre) del almacén/tienda.")
+
+
+class AlmacenesPage(BaseModel):
+    """Lista completa de almacenes (sin paginar)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "items": [{"fldIdAlmacen": "00000207", "almacen_descripcion": "TIENDA CENTRO"}],
+                "count": 1, "limit": 1, "offset": 0,
+            }
+        }
+    )
+
+    items: list[AlmacenOut]
+    count: int = Field(..., description="Nº de almacenes devueltos.")
+    limit: int = Field(..., description="Igual a count (no se pagina).")
+    offset: int = Field(..., description="Siempre 0.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

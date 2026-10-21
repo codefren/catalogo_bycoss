@@ -8,11 +8,13 @@
 ## 1. Qué es
 
 API HTTP **de solo lectura** (solo `GET` sobre datos) del catálogo de una cadena
-de tiendas de moda. Expone cuatro conjuntos de datos que vienen del ERP:
+de tiendas de moda. Expone cinco conjuntos de datos que vienen del ERP:
 
 | Recurso | Ruta base | Tabla | Grano (qué es una fila) |
 |---|---|---|---|
 | Catálogo / stock | `/api/skus` | `sku` | Un SKU (artículo + color + talla) **en un almacén** |
+| Stock por almacén | `/api/stock` | `stock` | Un artículo-color-talla **en un almacén**, con la descripción del almacén |
+| Almacenes | `/api/stock/almacenes` | `stock` agregada | Un almacén con su descripción |
 | Ventas (líneas) | `/api/ventas` | `ticket_maestro` | Una **línea** de ticket |
 | Ventas (cabeceras) | `/api/ventas/cabeceras` | `ticket_maestro` agregada | Un **ticket** con sus totales |
 | Compras | `/api/compras` | `compras_maestro` | Un artículo-color-talla comprado a un proveedor |
@@ -90,17 +92,17 @@ y filtros precisos antes que muchas pequeñas.
 
 Claves comunes entre recursos (son texto, compáralas tal cual):
 
-| Concepto | sku | ventas | compras | cajas pendientes |
-|---|---|---|---|---|
-| SKU | `sku` | `sku` | — | — |
-| Artículo | `fldIdArticulo` | `fldIdArticulo` | `fldIdArticulo` | `articulo` |
-| Color | `fldIdColor` | `fldIdColor` | `fldIdColor` | `color` |
-| Talla | `talla` | `fldTalla` | `talla` | `talla` |
-| Almacén / tienda | `fldIdAlmacen` | `fldIdAlmacen` | `fldIdAlmacen` | `tienda` |
-| Código de barras | `codigo_barras` | — | — | `ean` |
-| Temporada | `fldTemporada` | — | `fldTemporada` | — |
-| Familia | `fldIdFamilia` | — | `fldIdFamilia` | `familia` |
-| Marca | `fldIdMarca` | — | — | `marca` |
+| Concepto | sku | stock | ventas | compras | cajas pendientes |
+|---|---|---|---|---|---|
+| SKU | `sku` | — | `sku` | — | — |
+| Artículo | `fldIdArticulo` | `fldIdArticulo` | `fldIdArticulo` | `fldIdArticulo` | `articulo` |
+| Color | `fldIdColor` | `fldIdColor` | `fldIdColor` | `fldIdColor` | `color` |
+| Talla | `talla` | `talla` | `fldTalla` | `talla` | `talla` |
+| Almacén / tienda | `fldIdAlmacen` | `fldIdAlmacen` | `fldIdAlmacen` | `fldIdAlmacen` | `tienda` |
+| Código de barras | `codigo_barras` | — | — | — | `ean` |
+| Temporada | `fldTemporada` | — | — | `fldTemporada` | — |
+| Familia | `fldIdFamilia` | — | — | `fldIdFamilia` | `familia` |
+| Marca | `fldIdMarca` | — | — | — | `marca` |
 
 - Un **artículo** tiene varias **permutas** color/talla; cada permuta es un
   **SKU**. Formato habitual del SKU: `<articulo>-<color>-<talla>`
@@ -108,6 +110,9 @@ Claves comunes entre recursos (son texto, compáralas tal cual):
 - Un **ticket** se identifica por la clave natural
   **(`fldIdEmpresa`, `fldIdAlmacen`, `fldIdCaja`, `fldIdTicket`)**; `fldIdTicket`
   solo NO es único entre tiendas/cajas.
+- La **descripción del almacén** solo está en `stock` (`almacen_descripcion`).
+  Para el nombre de un `fldIdAlmacen` de cualquier recurso, usa
+  `GET /api/stock/almacenes`.
 
 ## 5. Endpoints
 
@@ -174,7 +179,50 @@ parámetro (`?almacen=A&almacen=B`), combinados con **OR**, máx. 50 valores.
 Las filas de **un** SKU, una por almacén, ordenadas por almacén, en el mismo
 sobre paginado. Filtro opcional `almacen` *(rep.)*. `404` si no existe.
 
-### 5.3 Ventas — `GET /api/ventas`
+### 5.3 Stock — `GET /api/stock`
+
+Una fila por **artículo-color-talla y almacén**, con la **descripción del
+almacén**. `stock_disponible` es el stock de ese almacén y **puede ser
+negativo**. Para totales, **suma** `stock_disponible` de las filas.
+
+**Campos** (`items[]`):
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `fldIdAlmacen` | string | Código de almacén/tienda. |
+| `almacen_descripcion` | string | Nombre del almacén/tienda. |
+| `fldIdArticulo` | string | Código de artículo. |
+| `fldIdColor` | string | Código de color. |
+| `talla` | string | Talla. |
+| `stock_disponible` | number | Stock disponible **en este almacén** (puede ser negativo). |
+| `actualizado_en` | datetime | Última actualización (sin zona horaria). |
+
+No trae descripción de artículo ni de color, ni PVP: para eso cruza con
+`/api/skus?articulo=X`. No se exponen los totales de entradas/salidas/servicio/tránsito.
+
+**Filtros**:
+
+| Parámetro | Columna | Notas |
+|---|---|---|
+| `almacen` *(rep.)* | `fldIdAlmacen` | |
+| `almacen_nombre` | `almacen_descripcion` | Contiene el texto, sin distinguir mayúsculas (máx. 200). |
+| `articulo` *(rep.)* | `fldIdArticulo` | |
+| `color` *(rep.)* | `fldIdColor` | |
+| `talla` *(rep.)* | `talla` | |
+| `stock_min`, `stock_max` | `stock_disponible` | Inclusivos; `stock_min > stock_max` → 422. |
+| `con_stock` | `stock_disponible` | `true` → solo filas con stock > 0. |
+| `actualizado_desde` | `actualizado_en` | ISO 8601. Para sincronización incremental. |
+| `orden` | — | `almacen` (defecto), `articulo`, `stock`, `actualizado`. |
+| `direccion` | — | `asc` (defecto) o `desc`. Los nulos van siempre al final. |
+| `limit`, `offset` | — | Paginación. |
+
+### 5.4 Almacenes — `GET /api/stock/almacenes`
+
+Lista **completa** (sin paginar) de almacenes: `fldIdAlmacen` y
+`almacen_descripcion`, ordenados por código. Úsala para poner nombre a un
+`fldIdAlmacen` de cualquier otro endpoint.
+
+### 5.5 Ventas — `GET /api/ventas`
 
 Una fila por **línea de ticket**. Orden: fecha desc, ticket, línea, empresa, almacén, caja.
 
@@ -190,12 +238,12 @@ Una fila por **línea de ticket**. Orden: fecha desc, ticket, línea, empresa, a
 **Filtros**: `fecha_desde`, `fecha_hasta`, `almacen`, `ticket`, `sku` (máx. 100),
 `cliente`, `limit`, `offset`. Un solo valor por filtro.
 
-### 5.4 Ventas — `GET /api/ventas/ticket/{empresa}/{almacen}/{caja}/{ticket}`
+### 5.6 Ventas — `GET /api/ventas/ticket/{empresa}/{almacen}/{caja}/{ticket}`
 
 Todas las líneas de un ticket por su clave natural, ordenadas por línea. Mismo
-sobre paginado y campos que 5.3. `404` si no hay líneas.
+sobre paginado y campos que 5.5. `404` si no hay líneas.
 
-### 5.5 Ventas — `GET /api/ventas/cabeceras`
+### 5.7 Ventas — `GET /api/ventas/cabeceras`
 
 Una fila por **ticket** con sus totales (sin duplicarlos por línea). Úsalo para
 importes por ticket, nº de tickets, ticket medio, etc. Orden: fecha desc, ticket, empresa, almacén, caja.
@@ -210,12 +258,12 @@ y totales: `fldPrendas`, `fldImporteBruto`, `fldImporteDto`, `fldImporteNeto`,
 **Filtros**: `fecha_desde`, `fecha_hasta`, `almacen`, `cliente`, `ticket`,
 `limit`, `offset`.
 
-### 5.6 Ventas — `GET /api/ventas/cabecera/{empresa}/{almacen}/{caja}/{ticket}`
+### 5.8 Ventas — `GET /api/ventas/cabecera/{empresa}/{almacen}/{caja}/{ticket}`
 
 La cabecera de un ticket. **Devuelve un objeto suelto** (no sobre paginado) con
-los campos de 5.5. `404` si no existe.
+los campos de 5.7. `404` si no existe.
 
-### 5.7 Compras — `GET /api/compras`
+### 5.9 Compras — `GET /api/compras`
 
 Una fila por artículo-color-talla comprado. Orden: fecha desc, proveedor,
 artículo, color, posición de talla, almacén.
@@ -230,7 +278,7 @@ artículo, color, posición de talla, almacén.
 **Filtros**: `fecha_desde`, `fecha_hasta`, `almacen`, `proveedor`, `articulo`,
 `color`, `talla`, `temporada`, `familia`, `limit`, `offset`.
 
-### 5.8 Cajas pendientes — `GET /api/cajas-pendientes`
+### 5.10 Cajas pendientes — `GET /api/cajas-pendientes`
 
 Mercancía enviada a tienda que **aún no ha llegado**. Una fila por
 artículo-color-talla dentro de una caja. Claves en **snake_case**. Orden: fecha
@@ -251,7 +299,7 @@ línea).
 **Filtros**: `tienda`, `cliente`, `articulo`, `ean`, `caja`, `pedido`, `envio`,
 `dispatch_note`, `limit`, `offset`.
 
-### 5.9 Cajas pendientes — `GET /api/cajas-pendientes/caja/{codigo_caja}`
+### 5.11 Cajas pendientes — `GET /api/cajas-pendientes/caja/{codigo_caja}`
 
 Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si no hay.
 
@@ -260,6 +308,8 @@ Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si 
 | Pregunta | Cómo |
 |---|---|
 | ¿Cuánto stock hay del artículo X en la tienda T? | `GET /api/skus?articulo=X&almacen=T` → una fila por color/talla; suma `stock_disponible`. |
+| ¿Stock de un artículo por tienda, con el nombre de la tienda? | `GET /api/stock?articulo=X&limit=500` → una fila por color/talla y tienda, con `almacen_descripcion`. |
+| ¿Cómo se llama la tienda T? | `GET /api/stock/almacenes` → busca `fldIdAlmacen = T`. |
 | ¿Stock total de un SKU en todas las tiendas? | `GET /api/skus/{sku}` → suma `stock_disponible` de `items`. |
 | ¿Qué tallas/colores tiene un artículo? | `GET /api/skus?articulo=X&limit=500` → valores distintos de `fldIdColor`/`talla`. |
 | ¿A qué producto corresponde un código de barras? | `GET /api/skus?codigo_barras=EAN` |
@@ -285,6 +335,8 @@ Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si 
    `actualizado_en` es datetime sin zona horaria.
 8. **Solo existen los campos documentados**: si un dato no aparece aquí (coste,
    margen, proveedor del SKU, empleado…), la API no lo ofrece.
+9. **El stock puede ser negativo** (en `/api/skus` y `/api/stock`);
+   `con_stock=true` solo deja stock > 0.
 
 ## 8. Ejemplo completo (Python)
 

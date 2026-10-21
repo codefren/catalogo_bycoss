@@ -1,0 +1,32 @@
+meta {
+  name: Listar almacenes
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/stock/almacenes
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("lista completa sin paginar", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.offset).to.equal(0);
+  });
+  test("cada almacén tiene código y descripción", function () {
+    for (const it of res.body.items) {
+      expect(it).to.have.all.keys("fldIdAlmacen", "almacen_descripcion");
+    }
+  });
+}
+
+docs {
+  Todos los almacenes con su descripción, para traducir cualquier
+  `fldIdAlmacen` a su nombre.
+}

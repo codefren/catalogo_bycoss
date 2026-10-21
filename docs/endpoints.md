@@ -11,7 +11,7 @@ para obtenerlo). Las respuestas son JSON.
 
 ## Paginación
 
-Los listados (`/api/skus`, `/api/ventas`, `/api/ventas/cabeceras`,
+Los listados (`/api/skus`, `/api/stock`, `/api/ventas`, `/api/ventas/cabeceras`,
 `/api/compras`, `/api/cajas-pendientes`) paginan con **`limit` / `offset`** y
 devuelven un **sobre paginado**:
 
@@ -53,12 +53,13 @@ siempre las mismas filas en cada página.
 | Endpoint | Orden |
 |---|---|
 | `/api/skus` | El de `orden`/`direccion` y, para desempatar, `sku`, `fldIdAlmacen`. |
+| `/api/stock` | El de `orden`/`direccion` y, para desempatar, `fldIdAlmacen`, `fldIdArticulo`, `fldIdColor`, `talla`. |
 | `/api/ventas` | `fecha` desc, `fldIdTicket`, `fldLinea`, `fldIdEmpresa`, `fldIdAlmacen`, `fldIdCaja`. |
 | `/api/ventas/cabeceras` | `fecha` desc, `fldIdTicket`, `fldIdEmpresa`, `fldIdAlmacen`, `fldIdCaja`. |
 | `/api/compras` | `fecha` desc, `fldIdProveedor`, `fldIdArticulo`, `fldIdColor`, `talla_pos`, `fldIdAlmacen`. |
 | `/api/cajas-pendientes` | `FechaSalida` desc, `CodigoCaja`, `Articulo`, `Color`, `Talla`. |
 
-En ventas, compras y cajas el último desempate es la posición física de la fila
+En stock, ventas, compras y cajas el último desempate es la posición física de la fila
 (`ctid` de Postgres), porque esas tablas no tienen una clave única: así hasta las
 filas duplicadas tienen un orden fijo.
 
@@ -70,8 +71,8 @@ Ten en cuenta:
 - **Rendimiento:** `offset` alto obliga a la base a recorrer y descartar todas
   las filas anteriores. Usa `limit=500` y acota con filtros en lugar de paginar
   tablas enteras.
-- Los endpoints de detalle (`/api/skus/{sku}`, `/api/ventas/ticket/...`,
-  `/api/cajas-pendientes/caja/{codigo_caja}`) devuelven todas las filas de una vez, no
+- Los endpoints de detalle (`/api/skus/{sku}`, `/api/stock/almacenes`,
+  `/api/ventas/ticket/...`, `/api/cajas-pendientes/caja/{codigo_caja}`) devuelven todas las filas de una vez, no
   aceptan `limit`/`offset` y en su sobre `limit == count`, `offset == 0`.
 
 **Uso recomendado:** hasta **1080 peticiones por minuto**.
@@ -142,6 +143,61 @@ paginado que el listado). `almacen` (*repetible*) limita a esos almacenes.
 ```bash
 curl -s "$BASE/api/skus/0100228002-000005-U" -H "Authorization: Bearer $ACCESS"
 curl -s "$BASE/api/skus/0100228002-000005-U?almacen=00000207" -H "Authorization: Bearer $ACCESS"
+```
+
+---
+
+## Stock por almacén (`stock`)
+
+Grano: **una fila por artículo-color-talla y almacén**. A diferencia de `sku`,
+incluye la **descripción del almacén** (`almacen_descripcion`).
+
+Campos devueltos: `fldIdAlmacen`, `almacen_descripcion`, `fldIdArticulo`,
+`fldIdColor`, `talla`, `stock_disponible`, `actualizado_en`. (No se exponen los
+totales de movimiento: entradas, salidas, servicio, tránsito.)
+
+`stock_disponible` es el stock **de ese almacén** y **puede ser negativo**. Para
+el total de un artículo en varias tiendas, suma `stock_disponible` de sus filas.
+
+### `GET /api/stock`
+Lista paginada. Todos los filtros son opcionales y se combinan con **AND**; los
+*repetibles* combinan sus valores con **OR** (máx. 50 valores).
+
+| Filtro | Columna | Descripción |
+|--------|---------|-------------|
+| `almacen` | `fldIdAlmacen` | Igualdad exacta, *repetible*. |
+| `almacen_nombre` | `almacen_descripcion` | Texto parcial en la descripción del almacén (sin distinguir mayúsculas). |
+| `articulo` | `fldIdArticulo` | Igualdad exacta, *repetible*. |
+| `color` | `fldIdColor` | Igualdad exacta, *repetible*. |
+| `talla` | `talla` | Igualdad exacta, *repetible*. |
+| `stock_min`, `stock_max` | `stock_disponible` | Rango de stock (inclusive); `stock_min > stock_max` → `422`. |
+| `con_stock` | `stock_disponible` | `true` → solo con stock > 0 (excluye los negativos). |
+| `actualizado_desde` | `actualizado_en` | Fecha/hora ISO 8601; filas actualizadas desde entonces (sync incremental). |
+| `orden` | — | `almacen` (defecto), `articulo`, `stock`, `actualizado`. |
+| `direccion` | — | `asc` (defecto) o `desc`. |
+| `limit`, `offset` | — | Paginación. |
+
+```bash
+# Stock del artículo 0100228002 en una tienda, con su nombre
+curl -s "$BASE/api/stock?articulo=0100228002&almacen=00000207" -H "Authorization: Bearer $ACCESS"
+
+# Stock total del artículo en todas las tiendas
+curl -s "$BASE/api/stock?articulo=0100228002&limit=500" -H "Authorization: Bearer $ACCESS" \
+  | jq '[.items[].stock_disponible // 0] | add'
+
+# Lo que tiene stock en las tiendas cuyo nombre contiene "centro", más stock primero
+curl -s "$BASE/api/stock?almacen_nombre=centro&con_stock=true&orden=stock&direccion=desc" \
+  -H "Authorization: Bearer $ACCESS"
+```
+
+### `GET /api/stock/almacenes`
+Todos los almacenes con su descripción (`fldIdAlmacen`, `almacen_descripcion`),
+ordenados por código. **No pagina**: devuelve la lista completa en el sobre
+habitual, con `limit == count` y `offset == 0`. Sirve para traducir el
+`fldIdAlmacen` de cualquier otro endpoint a su nombre.
+
+```bash
+curl -s "$BASE/api/stock/almacenes" -H "Authorization: Bearer $ACCESS"
 ```
 
 ---

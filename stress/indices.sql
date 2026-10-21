@@ -32,7 +32,15 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_compras_fecha ON compras_maestro (fec
 CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_cajas_caja   ON cajas_pendientes ("CodigoCaja");
 CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_cajas_tienda ON cajas_pendientes ("Tienda");
 
+-- ── stock ────────────────────────────────────────────────────────────────────
+-- Orden por defecto (almacén, artículo, color, talla) y filtro por almacén.
+CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_stock_almacen_articulo
+    ON stock ("fldIdAlmacen", "fldIdArticulo", "fldIdColor", talla);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_stock_articulo   ON stock ("fldIdArticulo");
+CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_stock_actualizado ON stock (actualizado_en);
+
 ANALYZE sku;
 ANALYZE ticket_maestro;
 ANALYZE compras_maestro;
 ANALYZE cajas_pendientes;
+ANALYZE stock;
