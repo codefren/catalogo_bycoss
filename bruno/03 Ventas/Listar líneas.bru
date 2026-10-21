@@ -1,0 +1,51 @@
+meta {
+  name: Listar líneas
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/ventas?fecha_desde={{fechaDesde}}&fecha_hasta={{fechaHasta}}&limit=50
+  body: none
+  auth: inherit
+}
+
+params:query {
+  fecha_desde: {{fechaDesde}}
+  fecha_hasta: {{fechaHasta}}
+  limit: 50
+  ~almacen: {{almacen}}
+  ~sku: 
+}
+
+script:post-response {
+  const items = res.body && res.body.items;
+  if (items && items.length) {
+    const t = items[0];
+    bru.setVar("tEmpresa", t.fldIdEmpresa);
+    bru.setVar("tAlmacen", t.fldIdAlmacen);
+    bru.setVar("tCaja", t.fldIdCaja);
+    bru.setVar("tTicket", t.fldIdTicket);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("sobre paginado", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.count).to.be.at.most(res.body.limit);
+  });
+  test("fechas dentro del rango", function () {
+    for (const it of res.body.items) {
+      expect(it.fecha >= bru.getEnvVar("fechaDesde")).to.equal(true);
+      expect(it.fecha <= bru.getEnvVar("fechaHasta")).to.equal(true);
+    }
+  });
+}
+
+docs {
+  Líneas de ticket en un rango de fechas. Guarda la clave del primer ticket para las peticiones de detalle.
+}

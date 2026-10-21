@@ -100,7 +100,12 @@ async def list_ventas(
     sql = "SELECT * FROM ticket_maestro"
     if where:
         sql += " WHERE " + " AND ".join(where)
-    sql += ' ORDER BY fecha DESC, "fldIdTicket", "fldLinea" LIMIT :limit OFFSET :offset'
+    # Orden total (clave natural de la línea + ctid) para que la paginación sea
+    # estable: sin él, las filas empatadas pueden cambiar de página entre consultas.
+    sql += (
+        ' ORDER BY fecha DESC, "fldIdTicket", "fldLinea", "fldIdEmpresa", "fldIdAlmacen", "fldIdCaja", ctid'
+        " LIMIT :limit OFFSET :offset"
+    )
     params.update(limit=limit, offset=offset)
 
     async with engine.connect() as conn:
@@ -130,7 +135,7 @@ async def get_ticket(
         "SELECT * FROM ticket_maestro "
         'WHERE "fldIdEmpresa" = :empresa AND "fldIdAlmacen" = :almacen '
         'AND "fldIdCaja" = :caja AND "fldIdTicket" = :ticket '
-        'ORDER BY "fldLinea"'
+        'ORDER BY "fldLinea", ctid'
     )
     params = {"empresa": empresa, "almacen": almacen, "caja": caja, "ticket": ticket}
     async with engine.connect() as conn:
@@ -185,7 +190,11 @@ async def list_cabeceras(
     if where:
         sql += " WHERE " + " AND ".join(where)
     sql += _CABECERA_GROUP_BY
-    sql += ' ORDER BY fecha DESC, "fldIdTicket" LIMIT :limit OFFSET :offset'
+    # La clave del GROUP BY completa el orden: una cabecera por ticket, sin empates.
+    sql += (
+        ' ORDER BY fecha DESC, "fldIdTicket", "fldIdEmpresa", "fldIdAlmacen", "fldIdCaja"'
+        " LIMIT :limit OFFSET :offset"
+    )
     params.update(limit=limit, offset=offset)
 
     async with engine.connect() as conn:

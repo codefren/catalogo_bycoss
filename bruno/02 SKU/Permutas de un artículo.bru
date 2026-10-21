@@ -1,0 +1,36 @@
+meta {
+  name: Permutas de un artículo
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/skus?articulo={{articulo}}&limit=500
+  body: none
+  auth: inherit
+}
+
+params:query {
+  articulo: {{articulo}}
+  limit: 500
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("sobre paginado", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.count).to.be.at.most(res.body.limit);
+  });
+  test("todas las filas son del artículo", function () {
+    for (const it of res.body.items) {
+      expect(it.fldIdArticulo).to.equal(bru.getEnvVar("articulo"));
+    }
+  });
+}
+
+docs {
+  Todas las combinaciones color/talla (y almacén) de un artículo.
+}

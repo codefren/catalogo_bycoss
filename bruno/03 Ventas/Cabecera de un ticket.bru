@@ -1,0 +1,26 @@
+meta {
+  name: Cabecera de un ticket
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/ventas/cabecera/{{tEmpresa}}/{{tAlmacen}}/{{tCaja}}/{{tTicket}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200 (o 404 si no hay datos de ejemplo)", function () {
+    expect([200, 404]).to.include(res.status);
+  });
+  if (res.status === 200) {
+    test("objeto suelto del ticket pedido", function () {
+      expect(res.body.fldIdTicket).to.equal(bru.getVar("tTicket"));
+    });
+  }
+}
+
+docs {
+  Cabecera de un ticket. Devuelve un **objeto**, no el sobre paginado.
+}

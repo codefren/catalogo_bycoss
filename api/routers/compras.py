@@ -78,7 +78,12 @@ async def list_compras(
     sql = "SELECT * FROM compras_maestro"
     if where:
         sql += " WHERE " + " AND ".join(where)
-    sql += ' ORDER BY fecha DESC, "fldIdProveedor", "fldIdArticulo", talla_pos LIMIT :limit OFFSET :offset'
+    # compras_maestro no tiene clave única: ctid cierra el orden para que la
+    # paginación sea estable.
+    sql += (
+        ' ORDER BY fecha DESC, "fldIdProveedor", "fldIdArticulo", "fldIdColor", talla_pos,'
+        ' "fldIdAlmacen", ctid LIMIT :limit OFFSET :offset'
+    )
     params.update(limit=limit, offset=offset)
 
     async with engine.connect() as conn:

@@ -1,0 +1,29 @@
+meta {
+  name: Logout
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/auth/logout
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refresh_token": "{{refreshToken}}"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  Revoca el refresh token actual. El access token sigue valiendo hasta que
+  caduque, así que el resto de la colección sigue funcionando. Vuelve a hacer
+  **Login** para tener un refresh nuevo.
+}

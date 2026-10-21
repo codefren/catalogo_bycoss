@@ -1,0 +1,28 @@
+meta {
+  name: Líneas de una caja
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/cajas-pendientes/caja/{{cajaEjemplo}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200 (o 404 si no hay datos de ejemplo)", function () {
+    expect([200, 404]).to.include(res.status);
+  });
+  if (res.status === 200) {
+    test("todas las líneas son de la caja", function () {
+      for (const it of res.body.items) {
+        expect(it.codigo_caja).to.equal(bru.getVar("cajaEjemplo"));
+      }
+    });
+  }
+}
+
+docs {
+  Todas las líneas de una caja. Usa `cajaEjemplo` (lo guarda **Listar cajas**).
+}

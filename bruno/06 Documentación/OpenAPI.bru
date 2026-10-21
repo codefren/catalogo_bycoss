@@ -1,0 +1,18 @@
+meta {
+  name: OpenAPI
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/openapi.json
+  body: none
+  auth: none
+}
+
+tests {
+  test("esquema OpenAPI", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.openapi).to.be.a("string");
+  });
+}

@@ -1,0 +1,48 @@
+meta {
+  name: Filtros combinados
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/skus?almacen={{almacen}}&almacen=00000208&con_stock=true&pvp_min=20&pvp_max=50&orden=pvp&direccion=desc&limit=100
+  body: none
+  auth: inherit
+}
+
+params:query {
+  almacen: {{almacen}}
+  almacen: 00000208
+  con_stock: true
+  pvp_min: 20
+  pvp_max: 50
+  orden: pvp
+  direccion: desc
+  limit: 100
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("sobre paginado", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.count).to.be.at.most(res.body.limit);
+  });
+  test("respeta filtros y orden", function () {
+    const items = res.body.items;
+    for (const it of items) {
+      expect(it.stock_disponible).to.be.above(0);
+      expect(it.pvp).to.be.within(20, 50);
+    }
+    for (let i = 1; i < items.length; i++) {
+      expect(items[i - 1].pvp).to.be.at.least(items[i].pvp);
+    }
+  });
+}
+
+docs {
+  Ejemplo de filtros: dos almacenes (parámetro repetido = OR), con stock,
+  PVP entre 20 y 50, ordenado por PVP descendente.
+}

@@ -1,0 +1,39 @@
+meta {
+  name: Listar cajas
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/cajas-pendientes?limit=50
+  body: none
+  auth: inherit
+}
+
+params:query {
+  limit: 50
+  ~tienda: {{almacen}}
+  ~ean: 
+}
+
+script:post-response {
+  const items = res.body && res.body.items;
+  if (items && items.length) {
+    bru.setVar("cajaEjemplo", items[0].codigo_caja);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("sobre paginado", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.count).to.be.at.most(res.body.limit);
+  });
+}
+
+docs {
+  Líneas de cajas en tránsito a tienda. Guarda la primera caja en `cajaEjemplo`.
+}

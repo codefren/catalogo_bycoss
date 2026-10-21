@@ -1,0 +1,35 @@
+meta {
+  name: Listar compras
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/compras?fecha_desde={{fechaDesde}}&fecha_hasta={{fechaHasta}}&limit=50
+  body: none
+  auth: inherit
+}
+
+params:query {
+  fecha_desde: {{fechaDesde}}
+  fecha_hasta: {{fechaHasta}}
+  limit: 50
+  ~proveedor: 
+  ~articulo: {{articulo}}
+  ~temporada: V25
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("sobre paginado", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.count).to.be.at.most(res.body.limit);
+  });
+}
+
+docs {
+  Líneas de compra a proveedor en un rango de fechas.
+}

@@ -1,0 +1,47 @@
+meta {
+  name: Listar SKUs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/skus?limit=100&offset=0
+  body: none
+  auth: inherit
+}
+
+params:query {
+  limit: 100
+  offset: 0
+  ~q: camiseta
+  ~con_stock: true
+}
+
+script:post-response {
+  const items = res.body && res.body.items;
+  if (items && items.length) {
+    bru.setVar("skuEjemplo", items[0].sku);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("sobre paginado", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.count).to.be.at.most(res.body.limit);
+  });
+  test("no expone campos sensibles", function () {
+    for (const it of res.body.items) {
+      expect(it).to.not.have.any.keys("precio_costo", "fldIdProveedor");
+    }
+  });
+}
+
+docs {
+  Listado paginado (una fila por SKU y almacén). Activa los parámetros
+  desactivados (`~`) en la pestaña *Params* para probar filtros. Guarda el
+  primer SKU en `skuEjemplo` para **Obtener SKU**.
+}

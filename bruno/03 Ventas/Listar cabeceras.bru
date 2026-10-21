@@ -1,0 +1,48 @@
+meta {
+  name: Listar cabeceras
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/ventas/cabeceras?fecha_desde={{fechaDesde}}&fecha_hasta={{fechaHasta}}&limit=50
+  body: none
+  auth: inherit
+}
+
+params:query {
+  fecha_desde: {{fechaDesde}}
+  fecha_hasta: {{fechaHasta}}
+  limit: 50
+  ~almacen: {{almacen}}
+}
+
+script:post-response {
+  const items = res.body && res.body.items;
+  if (items && items.length) {
+    const t = items[0];
+    bru.setVar("tEmpresa", t.fldIdEmpresa);
+    bru.setVar("tAlmacen", t.fldIdAlmacen);
+    bru.setVar("tCaja", t.fldIdCaja);
+    bru.setVar("tTicket", t.fldIdTicket);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("sobre paginado", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.count).to.be.at.most(res.body.limit);
+  });
+  test("un ticket por fila (sin duplicados)", function () {
+    const claves = res.body.items.map(c => [c.fldIdEmpresa, c.fldIdAlmacen, c.fldIdCaja, c.fldIdTicket].join("|"));
+    expect(new Set(claves).size).to.equal(claves.length);
+  });
+}
+
+docs {
+  Una fila por ticket con sus totales. Úsalo para importes, nº de tickets o ticket medio.
+}

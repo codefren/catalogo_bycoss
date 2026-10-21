@@ -9,15 +9,70 @@ para obtenerlo). Las respuestas son JSON.
 - Contexto para asistentes (Claude/LLM): `/contexto-api.md` (fuente:
   `api/contexto_api.md`; actualízalo cuando cambie un endpoint)
 
-Los listados devuelven un **sobre paginado**:
+## Paginación
+
+Los listados (`/api/skus`, `/api/ventas`, `/api/ventas/cabeceras`,
+`/api/compras`, `/api/cajas-pendientes`) paginan con **`limit` / `offset`** y
+devuelven un **sobre paginado**:
 
 ```json
 { "items": [ ... ], "count": 2, "limit": 50, "offset": 0 }
 ```
 
-- `limit`: tamaño de página (1–500, por defecto 50).
-- `offset`: desplazamiento (paginación).
-- `count`: nº de filas devueltas en esta página.
+| Campo | Significado |
+|---|---|
+| `items` | Filas de esta página. |
+| `count` | Nº de filas devueltas **en esta página** (no el total de la consulta: la API no calcula totales). |
+| `limit` | Tamaño de página solicitado: 1–500, por defecto 50. Fuera de rango → `422`. |
+| `offset` | Filas que se saltan antes de empezar la página: ≥ 0, por defecto 0. |
+
+Por dentro es `ORDER BY ... LIMIT :limit OFFSET :offset`: la página *n*
+(empezando en 0) se pide con `offset = n × limit`.
+
+**Cómo saber que no hay más páginas:** cuando `count < limit`. Si `count == limit`
+puede haber más (o ninguna: la siguiente vendrá con `items: []`).
+
+**Leerlo todo:**
+
+```bash
+offset=0
+while :; do
+  page=$(curl -s "$BASE/api/compras?fecha_desde=2025-06-01&limit=500&offset=$offset" \
+    -H "Authorization: Bearer $ACCESS")
+  echo "$page" | jq -c '.items[]'
+  [ "$(echo "$page" | jq .count)" -lt 500 ] && break
+  offset=$((offset + 500))
+done
+```
+
+**Orden de cada listado** (es lo que determina qué filas caen en cada página).
+Todos los listados tienen un **orden total**: el `ORDER BY` termina en una clave
+única, así que dos filas nunca empatan y repetir la misma consulta devuelve
+siempre las mismas filas en cada página.
+
+| Endpoint | Orden |
+|---|---|
+| `/api/skus` | El de `orden`/`direccion` y, para desempatar, `sku`, `fldIdAlmacen`. |
+| `/api/ventas` | `fecha` desc, `fldIdTicket`, `fldLinea`, `fldIdEmpresa`, `fldIdAlmacen`, `fldIdCaja`. |
+| `/api/ventas/cabeceras` | `fecha` desc, `fldIdTicket`, `fldIdEmpresa`, `fldIdAlmacen`, `fldIdCaja`. |
+| `/api/compras` | `fecha` desc, `fldIdProveedor`, `fldIdArticulo`, `fldIdColor`, `talla_pos`, `fldIdAlmacen`. |
+| `/api/cajas-pendientes` | `FechaSalida` desc, `CodigoCaja`, `Articulo`, `Color`, `Talla`. |
+
+En ventas, compras y cajas el último desempate es la posición física de la fila
+(`ctid` de Postgres), porque esas tablas no tienen una clave única: así hasta las
+filas duplicadas tienen un orden fijo.
+
+Ten en cuenta:
+
+- **Los datos pueden cambiar entre páginas:** si se recargan mientras paginas,
+  puede haber filas repetidas o saltadas. Para extracciones completas, acota por
+  fechas (o, en SKU, por `actualizado_desde`) y no pagines durante una carga.
+- **Rendimiento:** `offset` alto obliga a la base a recorrer y descartar todas
+  las filas anteriores. Usa `limit=500` y acota con filtros en lugar de paginar
+  tablas enteras.
+- Los endpoints de detalle (`/api/skus/{sku}`, `/api/ventas/ticket/...`,
+  `/api/cajas-pendientes/caja/{codigo_caja}`) devuelven todas las filas de una vez, no
+  aceptan `limit`/`offset` y en su sobre `limit == count`, `offset == 0`.
 
 Todos los endpoints están sujetos al **rate limit** por IP (`300/minute` por
 defecto); al superarlo devuelven `429`.
@@ -257,7 +312,7 @@ curl -s "$BASE/api/cajas-pendientes?ean=8412345678901" -H "Authorization: Bearer
 ```
 
 ### `GET /api/cajas-pendientes/caja/{codigo_caja}`
-Todas las líneas de una caja por su `CodigoCaja`, ordenadas por artículo y talla.
+Todas las líneas de una caja por su `CodigoCaja`, ordenadas por artículo, color y talla.
 `404` si no hay líneas.
 
 ```bash

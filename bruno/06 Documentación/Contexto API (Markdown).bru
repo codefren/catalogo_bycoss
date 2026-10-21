@@ -1,0 +1,23 @@
+meta {
+  name: Contexto API (Markdown)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/contexto-api.md
+  body: none
+  auth: none
+}
+
+tests {
+  test("devuelve Markdown", function () {
+    expect(res.status).to.equal(200);
+    expect(res.headers["content-type"]).to.contain("text/markdown");
+  });
+}
+
+docs {
+  Documento con todo el contexto de la API para dárselo a Claude u otro
+  asistente.
+}

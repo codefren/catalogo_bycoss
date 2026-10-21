@@ -1,0 +1,28 @@
+meta {
+  name: Líneas de un ticket
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/ventas/ticket/{{tEmpresa}}/{{tAlmacen}}/{{tCaja}}/{{tTicket}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200 (o 404 si no hay datos de ejemplo)", function () {
+    expect([200, 404]).to.include(res.status);
+  });
+  if (res.status === 200) {
+    test("todas las líneas son del ticket", function () {
+      for (const it of res.body.items) {
+        expect(it.fldIdTicket).to.equal(bru.getVar("tTicket"));
+      }
+    });
+  }
+}
+
+docs {
+  Todas las líneas de un ticket por su clave natural (empresa, almacén, caja, ticket).
+}

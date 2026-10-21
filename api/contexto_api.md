@@ -58,7 +58,8 @@ Los listados devuelven:
 - `count`: nº de filas **de esta página** (NO el total de la consulta). No hay
   total disponible.
 - **Para leerlo todo**: pide páginas con `limit=500` y `offset` += 500 hasta que
-  `count < limit`. El orden es estable, así que no se repiten ni saltan filas
+  `count < limit`. Todos los listados tienen orden total (el `ORDER BY` acaba
+  en una clave única), así que no se repiten ni saltan filas
   mientras los datos no cambien.
 
 ### Filtros
@@ -177,7 +178,7 @@ sobre paginado. Filtro opcional `almacen` *(rep.)*. `404` si no existe.
 
 ### 5.3 Ventas — `GET /api/ventas`
 
-Una fila por **línea de ticket**. Orden: fecha desc, ticket, línea.
+Una fila por **línea de ticket**. Orden: fecha desc, ticket, línea, empresa, almacén, caja.
 
 **Campos**: `fldIdEmpresa`, `fldIdAlmacen`, `fldIdCaja`, `fldIdTicket`,
 `fldLinea` (string); `fecha` (date); `fldHora` (string `HH:MM:SS`);
@@ -199,7 +200,7 @@ sobre paginado y campos que 5.3. `404` si no hay líneas.
 ### 5.5 Ventas — `GET /api/ventas/cabeceras`
 
 Una fila por **ticket** con sus totales (sin duplicarlos por línea). Úsalo para
-importes por ticket, nº de tickets, ticket medio, etc. Orden: fecha desc.
+importes por ticket, nº de tickets, ticket medio, etc. Orden: fecha desc, ticket, empresa, almacén, caja.
 
 **Campos**: clave natural (`fldIdEmpresa`, `fldIdAlmacen`, `fldIdCaja`,
 `fldIdTicket`), `fecha`, `fldHora`, `fldIdCliente`, `fldIdMoneda`, `fldCambio`,
@@ -219,7 +220,7 @@ los campos de 5.5. `404` si no existe.
 ### 5.7 Compras — `GET /api/compras`
 
 Una fila por artículo-color-talla comprado. Orden: fecha desc, proveedor,
-artículo, posición de talla.
+artículo, color, posición de talla, almacén.
 
 **Campos**: `fldIdEmpresa`, `fldIdAlmacen`, `fldIdProveedor`, `nombre_proveedor`
 (string); `fecha` (date); `fldIdArticulo`, `fldIdColor` (string); `talla_pos`
@@ -235,7 +236,7 @@ artículo, posición de talla.
 
 Mercancía enviada a tienda que **aún no ha llegado**. Una fila por
 artículo-color-talla dentro de una caja. Claves en **snake_case**. Orden: fecha
-de salida desc, caja, artículo, talla.
+de salida desc, caja, artículo, color, talla.
 
 **Campos**: `cod_cliente`, `tienda`, `nombre_tienda`, `dispatch_note` (albarán),
 `fecha_salida`, `fecha_llegada`, `codigo_caja`, `no_bulto` (string);
@@ -254,7 +255,7 @@ línea).
 
 ### 5.9 Cajas pendientes — `GET /api/cajas-pendientes/caja/{codigo_caja}`
 
-Todas las líneas de una caja, ordenadas por artículo y talla. `404` si no hay.
+Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si no hay.
 
 ## 6. Recetas para preguntas habituales
 

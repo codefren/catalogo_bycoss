@@ -102,7 +102,12 @@ async def list_cajas_pendientes(
     sql = _SELECT
     if where:
         sql += " WHERE " + " AND ".join(where)
-    sql += ' ORDER BY "FechaSalida" DESC, "CodigoCaja", "Articulo", "Talla" LIMIT :limit OFFSET :offset'
+    # cajas_pendientes no tiene clave única: ctid cierra el orden para que la
+    # paginación sea estable.
+    sql += (
+        ' ORDER BY "FechaSalida" DESC, "CodigoCaja", "Articulo", "Color", "Talla", ctid'
+        " LIMIT :limit OFFSET :offset"
+    )
     params.update(limit=limit, offset=offset)
 
     async with engine.connect() as conn:
@@ -125,7 +130,7 @@ async def get_caja(
     codigo_caja: str,
     _: dict = Depends(require_jwt),
 ):
-    sql = _SELECT + ' WHERE "CodigoCaja" = :caja ORDER BY "Articulo", "Talla"'
+    sql = _SELECT + ' WHERE "CodigoCaja" = :caja ORDER BY "Articulo", "Color", "Talla", ctid'
     async with engine.connect() as conn:
         rows = (await conn.execute(text(sql), {"caja": codigo_caja})).mappings().all()
     if not rows:

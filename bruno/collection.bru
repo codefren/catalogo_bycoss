@@ -1,0 +1,23 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+docs {
+  # Catálogo API — colección Bruno
+
+  API de solo lectura del catálogo (SKUs, ventas, compras, cajas pendientes).
+
+  ## Uso
+  1. Copia `.env.example` a `.env` (en esta carpeta) y pon la contraseña.
+  2. Elige el entorno (`local` o `produccion`) arriba a la derecha.
+  3. Ejecuta **Auth / Login**: guarda `accessToken` y `refreshToken` en
+     variables y el resto de peticiones los usan solos (auth heredada).
+  4. Las peticiones de listado guardan ejemplos (`skuEjemplo`, ticket, caja)
+     que usan las de detalle, así que ejecútalas en orden o con *Run collection*.
+
+  Contexto completo de la API: `{{baseUrl}}/contexto-api.md`.
+}
