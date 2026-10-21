@@ -54,6 +54,7 @@ class RefreshIn(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 _SKU_EXAMPLE = {
     "sku": "001234-05-M",
+    "fldIdAlmacen": "00000207",
     "fldIdArticulo": "001234",
     "articulo_descripcion": "Camiseta manga corta",
     "fldTemporada": "V25",
@@ -67,8 +68,8 @@ _SKU_EXAMPLE = {
     "fldIdGrupoTallas": "GT1",
     "grupotalla_descripcion": "Tallas S-XXL",
     "talla": "M",
+    "pvp": 29.95,
     "stock_disponible": 23,
-    "num_almacenes": 3,
     "actualizado_en": "2025-10-14T02:11:00",
 }
 
@@ -144,14 +145,16 @@ _COMPRA_EXAMPLE = {
 #  SKU — catálogo de artículos a nivel artículo-color-talla
 # ─────────────────────────────────────────────────────────────────────────────
 class SkuOut(BaseModel):
-    """Una referencia del catálogo (grano: artículo + color + talla)."""
+    """Una referencia del catálogo en un almacén (grano: artículo + color +
+    talla + almacén)."""
 
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={"example": _SKU_EXAMPLE},
     )
 
-    sku: str | None = Field(None, description="Código único de SKU (artículo-color-talla).")
+    sku: str | None = Field(None, description="Código de SKU (artículo-color-talla).")
+    fldIdAlmacen: str | None = Field(None, description="Código de almacén/tienda de esta fila.")
     fldIdArticulo: str | None = Field(None, description="Código de artículo.")
     articulo_descripcion: str | None = Field(None, description="Descripción del artículo.")
     fldTemporada: str | None = Field(None, description="Temporada del artículo.")
@@ -165,8 +168,8 @@ class SkuOut(BaseModel):
     fldIdGrupoTallas: str | None = Field(None, description="Código del grupo de tallas.")
     grupotalla_descripcion: str | None = Field(None, description="Descripción del grupo de tallas.")
     talla: str | None = Field(None, description="Talla.")
-    stock_disponible: float | None = Field(None, description="Stock disponible calculado.")
-    num_almacenes: int | None = Field(None, description="Nº de almacenes con existencias.")
+    pvp: float | None = Field(None, description="Precio de venta al público.")
+    stock_disponible: float | None = Field(None, description="Stock disponible en este almacén.")
     actualizado_en: datetime | None = Field(None, description="Última actualización del registro.")
 
 

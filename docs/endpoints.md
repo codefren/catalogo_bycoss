@@ -24,34 +24,68 @@ defecto); al superarlo devuelven `429`.
 
 ## SKU — catálogo (`sku`)
 
+Grano: **una fila por SKU (artículo-color-talla) y almacén**. Un mismo SKU sale
+una vez por cada almacén (`fldIdAlmacen`) que lo tenga.
+
+Campos devueltos: `sku`, `fldIdAlmacen`, `fldIdArticulo`, `articulo_descripcion`,
+`fldTemporada`, `fldIdFamilia`, `fldReferencia`, `codigo_barras`, `fldColeccion`,
+`fldIdMarca`, `fldIdColor`, `color_descripcion`, `fldIdGrupoTallas`,
+`grupotalla_descripcion`, `talla`, `pvp`, `stock_disponible`, `actualizado_en`.
+(No se exponen coste, proveedor, parámetros de reposición ni totales de
+movimiento.)
+
 ### `GET /api/skus`
-Lista paginada de SKUs (una fila por artículo-color-talla).
+Lista paginada. Todos los filtros son opcionales y se combinan con **AND**. Los
+marcados como *repetible* aceptan varios valores repitiendo el parámetro
+(`?almacen=A&almacen=B`), que se combinan con **OR** (máx. 50 valores).
 
 | Filtro | Columna | Descripción |
 |--------|---------|-------------|
-| `articulo` | `fldIdArticulo` | Todas las **permutas** (color/talla) de un artículo. |
 | `q` | `articulo_descripcion` | Texto parcial en la descripción (sin distinguir mayúsculas). |
-| `temporada` | `fldTemporada` | Igualdad exacta. |
-| `familia` | `fldIdFamilia` | Igualdad exacta. |
-| `proveedor` | `fldIdProveedor` | Igualdad exacta. |
-| `marca` | `fldIdMarca` | Igualdad exacta. |
-| `color` | `fldIdColor` | Igualdad exacta. |
-| `talla` | `talla` | Igualdad exacta. |
+| `sku_prefijo` | `sku` | SKUs que empiezan por este texto. |
+| `almacen` | `fldIdAlmacen` | Igualdad exacta, *repetible*. |
+| `articulo` | `fldIdArticulo` | Todas las **permutas** (color/talla) de un artículo, *repetible*. |
+| `temporada` | `fldTemporada` | Igualdad exacta, *repetible*. |
+| `familia` | `fldIdFamilia` | Igualdad exacta, *repetible*. |
+| `marca` | `fldIdMarca` | Igualdad exacta, *repetible*. |
+| `coleccion` | `fldColeccion` | Igualdad exacta, *repetible*. |
+| `color` | `fldIdColor` | Igualdad exacta, *repetible*. |
+| `grupo_tallas` | `fldIdGrupoTallas` | Igualdad exacta, *repetible*. |
+| `talla` | `talla` | Igualdad exacta, *repetible*. |
+| `codigo_barras` | `codigo_barras` | EAN exacto, *repetible*. |
+| `referencia` | `fldReferencia` | Igualdad exacta, *repetible*. |
+| `pvp_min`, `pvp_max` | `pvp` | Rango de PVP (inclusive). |
+| `stock_min`, `stock_max` | `stock_disponible` | Rango de stock (inclusive). |
 | `con_stock` | `stock_disponible` | `true` → solo con stock > 0. |
+| `actualizado_desde` | `actualizado_en` | Fecha/hora ISO 8601; filas actualizadas desde entonces (sync incremental). |
+| `orden` | — | `sku` (defecto), `articulo`, `pvp`, `stock`, `actualizado`. |
+| `direccion` | — | `asc` (defecto) o `desc`. |
 | `limit`, `offset` | — | Paginación. |
 
-Ordena por código de SKU.
+Los nulos van siempre al final y se desempata por `sku` + `fldIdAlmacen`, así la
+paginación es estable.
 
 ```bash
 # Todas las permutas del artículo 0100228002
 curl -s "$BASE/api/skus?articulo=0100228002&limit=500" -H "Authorization: Bearer $ACCESS"
+
+# Con stock en dos tiendas, temporada V25, PVP entre 20 y 50, más caros primero
+curl -s "$BASE/api/skus?almacen=00000207&almacen=00000208&temporada=V25&pvp_min=20&pvp_max=50&con_stock=true&orden=pvp&direccion=desc" \
+  -H "Authorization: Bearer $ACCESS"
+
+# Cambios desde una fecha (sincronización incremental)
+curl -s "$BASE/api/skus?actualizado_desde=2025-10-14T00:00:00&orden=actualizado&limit=500" \
+  -H "Authorization: Bearer $ACCESS"
 ```
 
 ### `GET /api/skus/{sku}`
-Una referencia por su código de SKU. `404` si no existe.
+Las filas de un SKU, **una por almacén**, ordenadas por almacén (mismo sobre
+paginado que el listado). `almacen` (*repetible*) limita a esos almacenes.
+`404` si no hay ninguna fila.
 
 ```bash
 curl -s "$BASE/api/skus/0100228002-000005-U" -H "Authorization: Bearer $ACCESS"
+curl -s "$BASE/api/skus/0100228002-000005-U?almacen=00000207" -H "Authorization: Bearer $ACCESS"
 ```
 
 ---
