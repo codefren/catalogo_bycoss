@@ -6,6 +6,8 @@ para obtenerlo). Las respuestas son JSON.
 
 - Base URL: `https://bycos.data4tex.com`
 - Swagger: `/docs` · ReDoc: `/redoc` · OpenAPI: `/openapi.json`
+- Contexto para asistentes (Claude/LLM): `/contexto-api.md` (fuente:
+  `api/contexto_api.md`; actualízalo cuando cambie un endpoint)
 
 Los listados devuelven un **sobre paginado**:
 

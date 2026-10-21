@@ -16,10 +16,11 @@ Esquema OpenAPI: /openapi.json
 """
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
@@ -85,15 +86,25 @@ tags_metadata = [
     {"name": "Ventas — líneas de ticket", "description": "Líneas de venta (tabla `ticket_maestro`); una fila por línea de ticket. Incluye también las **cabeceras** (`/api/ventas/cabeceras`), que agregan los totales de cada ticket en una sola fila."},
     {"name": "Compras — líneas de compra", "description": "Líneas de compra a proveedor (tabla `compras_maestro`); una fila por artículo-color-talla comprado."},
     {"name": "Cajas pendientes", "description": "Líneas de cajas/envíos pendientes de llegada a tienda (tabla `cajas_pendientes`); claves normalizadas a snake_case."},
+    {"name": "Documentación", "description": "Contexto completo de la API en Markdown, listo para dárselo a un asistente (Claude u otro LLM)."},
     {"name": "Infra", "description": "Salud del servicio."},
 ]
 
+# Contexto de la API para asistentes (LLM). Se lee una vez al arrancar.
+CONTEXTO_PATH = Path(__file__).parent / "contexto_api.md"
+CONTEXTO_MD = CONTEXTO_PATH.read_text(encoding="utf-8")
+
 app = FastAPI(
     title="Catálogo API",
-    version="1.2.0",
+    version="1.3.0",
     lifespan=lifespan,
     description=(
-        "Consulta de **solo lectura** del catálogo (SKUs y ventas).\n\n"
+        "Consulta de **solo lectura** del catálogo (SKUs, ventas, compras y "
+        "cajas pendientes).\n\n"
+        "📄 **Contexto completo para asistentes (Claude / LLM):** "
+        "[`/contexto-api.md`](/contexto-api.md). Markdown con todos los endpoints, "
+        "filtros, campos, relaciones entre tablas, recetas y trampas habituales. "
+        "Descárgalo y pégalo (o adjúntalo) en la conversación con el asistente.\n\n"
         "**Autenticación (JWT con usuario):**\n"
         "1. `POST /auth/token` con **usuario** y **contraseña** (formulario), "
         "validados contra la tabla `api_users`.\n"
@@ -106,7 +117,7 @@ app = FastAPI(
         "En Swagger: pulsa **Authorize** (arriba), introduce usuario y "
         "contraseña y listo.\n\n"
         f"**Límite de peticiones (rate limiting):** máximo **{settings.rate_limit}** "
-        "por IP, compartido por todos los endpoints `/api/*`. Al superarlo, la API "
+        "por IP y por endpoint. Al superarlo, la API "
         "responde `429 Too Many Requests`. El valor se configura con la variable "
         "de entorno `RATE_LIMIT` (formato de slowapi, p. ej. `60/minute`, "
         "`1/second`, `1000/hour`)."
@@ -131,6 +142,26 @@ if settings.cors_list:
         allow_origins=settings.cors_list,
         allow_methods=["GET", "POST"],
         allow_headers=["Authorization", "Content-Type"],
+    )
+
+
+# ── Contexto para asistentes (sin auth, como /docs) ──────────────────────────
+@app.get(
+    "/contexto-api.md",
+    tags=["Documentación"],
+    summary="Contexto de la API para asistentes (Markdown)",
+    description="Devuelve un documento Markdown con todo el contexto de la API "
+    "(autenticación, endpoints, filtros, campos, relaciones, recetas y trampas) "
+    "pensado para proporcionárselo a Claude u otro asistente. Público, como "
+    "`/docs`: no contiene datos ni secretos.",
+    response_class=Response,
+    responses={200: {"content": {"text/markdown": {}}, "description": "Documento Markdown."}},
+)
+async def contexto_api():
+    return Response(
+        content=CONTEXTO_MD,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": 'inline; filename="contexto_api.md"'},
     )
 
 
