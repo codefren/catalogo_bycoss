@@ -161,6 +161,7 @@ parámetro (`?almacen=A&almacen=B`), combinados con **OR**, máx. 50 valores.
 | `articulo` *(rep.)* | `fldIdArticulo` | Devuelve todas sus permutas color/talla. |
 | `temporada` *(rep.)* | `fldTemporada` | |
 | `familia` *(rep.)* | `fldIdFamilia` | |
+| `sexo` *(rep.)* | `fldIdSexo` | |
 | `marca` *(rep.)* | `fldIdMarca` | |
 | `coleccion` *(rep.)* | `fldColeccion` | |
 | `color` *(rep.)* | `fldIdColor` | |

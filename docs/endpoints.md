@@ -108,6 +108,7 @@ marcados como *repetible* aceptan varios valores repitiendo el parámetro
 | `articulo` | `fldIdArticulo` | Todas las **permutas** (color/talla) de un artículo, *repetible*. |
 | `temporada` | `fldTemporada` | Igualdad exacta, *repetible*. |
 | `familia` | `fldIdFamilia` | Igualdad exacta, *repetible*. |
+| `sexo` | `fldIdSexo` | Igualdad exacta, *repetible*. |
 | `marca` | `fldIdMarca` | Igualdad exacta, *repetible*. |
 | `coleccion` | `fldColeccion` | Igualdad exacta, *repetible*. |
 | `color` | `fldIdColor` | Igualdad exacta, *repetible*. |

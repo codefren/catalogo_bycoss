@@ -74,6 +74,7 @@ _FILTROS_LISTA = {
     "articulo": '"fldIdArticulo"',
     "temporada": '"fldTemporada"',
     "familia": '"fldIdFamilia"',
+    "sexo": '"fldIdSexo"',
     "marca": '"fldIdMarca"',
     "coleccion": '"fldColeccion"',
     "color": '"fldIdColor"',
@@ -118,6 +119,7 @@ async def list_skus(
     articulo: list[Codigo] | None = _lista("Filtra por fldIdArticulo (todas sus permutas color/talla)."),
     temporada: list[Codigo] | None = _lista("Filtra por fldTemporada."),
     familia: list[Codigo] | None = _lista("Filtra por fldIdFamilia."),
+    sexo: list[Codigo] | None = _lista("Filtra por fldIdSexo."),
     marca: list[Codigo] | None = _lista("Filtra por fldIdMarca."),
     coleccion: list[Codigo] | None = _lista("Filtra por fldColeccion."),
     color: list[Codigo] | None = _lista("Filtra por fldIdColor."),
@@ -156,7 +158,7 @@ async def list_skus(
 
     valores = {
         "almacen": almacen, "articulo": articulo, "temporada": temporada,
-        "familia": familia, "marca": marca, "coleccion": coleccion,
+        "familia": familia, "sexo": sexo, "marca": marca, "coleccion": coleccion,
         "color": color, "grupo_tallas": grupo_tallas, "talla": talla,
         "codigo_barras": codigo_barras, "referencia": referencia,
     }
