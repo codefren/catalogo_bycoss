@@ -198,6 +198,7 @@ negativo**. Para totales, **suma** `stock_disponible` de las filas.
 | `fldIdArticulo` | string | Código de artículo. |
 | `fldIdColor` | string | Código de color. |
 | `talla` | string | Talla. |
+| `total_transito` | number | Unidades **en tránsito** (pedidas, aún no recibidas en el almacén). |
 | `stock_disponible` | number | Stock disponible **en este almacén** (puede ser negativo). |
 | `actualizado_en` | datetime | Última actualización (sin zona horaria). |
 

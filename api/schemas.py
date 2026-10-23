@@ -82,6 +82,7 @@ _STOCK_EXAMPLE = {
     "fldIdArticulo": "001234",
     "fldIdColor": "05",
     "talla": "M",
+    "total_transito": 12,
     "stock_disponible": 23,
     "actualizado_en": "2025-10-14T02:11:00",
 }
@@ -220,6 +221,7 @@ class StockOut(BaseModel):
     fldIdArticulo: str | None = Field(None, description="Código de artículo.")
     fldIdColor: str | None = Field(None, description="Código de color.")
     talla: str | None = Field(None, description="Talla.")
+    total_transito: float | None = Field(None, description="Unidades en tránsito (pedidas, aún no recibidas en el almacén).")
     stock_disponible: float | None = Field(None, description="Stock disponible en este almacén (puede ser negativo).")
     actualizado_en: datetime | None = Field(None, description="Última actualización del registro.")
 

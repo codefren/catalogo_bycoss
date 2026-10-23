@@ -181,8 +181,12 @@ Grano: **una fila por artículo-color-talla y almacén**. A diferencia de `sku`,
 incluye la **descripción del almacén** (`almacen_descripcion`).
 
 Campos devueltos: `fldIdAlmacen`, `almacen_descripcion`, `fldIdArticulo`,
-`fldIdColor`, `talla`, `stock_disponible`, `actualizado_en`. (No se exponen los
-totales de movimiento: entradas, salidas, servicio, tránsito.)
+`fldIdColor`, `talla`, `total_transito`, `stock_disponible`, `actualizado_en`.
+(De los totales de movimiento solo se expone `total_transito`; entradas, salidas
+y servicio quedan fuera.)
+
+`total_transito` son las unidades **en tránsito** (pedidas al proveedor, aún no
+recibidas en el almacén).
 
 `stock_disponible` es el stock **de ese almacén** y **puede ser negativo**. Para
 el total de un artículo en varias tiendas, suma `stock_disponible` de sus filas.

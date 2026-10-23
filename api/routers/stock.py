@@ -7,8 +7,8 @@ almacén (`almacen_descripcion`).
 OJO: las columnas camelCase (`fldIdAlmacen`, `fldIdArticulo`, …) se crearon con
 comillas en Postgres, así que en el SQL hay que citarlas.
 
-SELECT explícito (nunca `SELECT *`): quedan fuera los totales de movimiento
-(entradas/salidas/servicio/tránsito), igual que en `sku`.
+SELECT explícito (nunca `SELECT *`): de los totales de movimiento solo se expone
+`total_transito`; entradas, salidas y servicio quedan fuera, igual que en `sku`.
 
 Todas las consultas son parametrizadas (bind params): sin inyección SQL. El
 orden se elige de una lista blanca, nunca se concatena input del usuario.
@@ -34,6 +34,7 @@ SELECT
     "fldIdArticulo",
     "fldIdColor",
     talla,
+    total_transito,
     stock_disponible,
     actualizado_en
 FROM stock
