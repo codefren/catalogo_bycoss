@@ -11,8 +11,8 @@ necesitan comillas.
 SELECT explícito (nunca `SELECT *`): solo salen de la base las columnas que se
 exponen. Quedan fuera, por sensibles o internas: proveedor,
 parámetros de reposición (mínimo/máximo/punto de pedido), totales de movimiento
-(entradas/salidas/servicio/tránsito) y códigos sin descripción (sexo, grupo,
-subgrupo, subfamilia, temporada de venta).
+(entradas/salidas/servicio/tránsito) y códigos sin descripción (grupo, subgrupo,
+subfamilia, temporada de venta).
 
 Todas las consultas son parametrizadas (bind params): sin inyección SQL. El
 orden se elige de una lista blanca, nunca se concatena input del usuario.
@@ -39,6 +39,7 @@ SELECT
     articulo_descripcion,
     "fldTemporada",
     "fldIdFamilia",
+    "fldIdSexo",
     "fldReferencia",
     codigo_barras,
     "fldColeccion",

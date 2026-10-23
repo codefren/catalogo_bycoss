@@ -132,6 +132,7 @@ filas.
 | `articulo_descripcion` | string | Descripción del artículo. |
 | `fldTemporada` | string | Temporada (p. ej. `V25`, `I25`). |
 | `fldIdFamilia` | string | Código de familia. |
+| `fldIdSexo` | string | Código de sexo (solo código, sin descripción). |
 | `fldReferencia` | string | Referencia del proveedor/fabricante. |
 | `codigo_barras` | string | EAN del SKU. |
 | `fldColeccion` | string | Colección. |

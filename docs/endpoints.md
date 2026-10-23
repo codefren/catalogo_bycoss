@@ -85,7 +85,7 @@ Grano: **una fila por SKU (artículo-color-talla) y almacén**. Un mismo SKU sal
 una vez por cada almacén (`fldIdAlmacen`) que lo tenga.
 
 Campos devueltos: `sku`, `fldIdAlmacen`, `fldIdArticulo`, `articulo_descripcion`,
-`fldTemporada`, `fldIdFamilia`, `fldReferencia`, `codigo_barras`, `fldColeccion`,
+`fldTemporada`, `fldIdFamilia`, `fldIdSexo`, `fldReferencia`, `codigo_barras`, `fldColeccion`,
 `fldIdMarca`, `fldIdColor`, `color_descripcion`, `fldIdGrupoTallas`,
 `grupotalla_descripcion`, `talla`, `pvp`, `precio_costo`, `stock_disponible`,
 `actualizado_en`. (No se exponen proveedor, parámetros de reposición ni totales
