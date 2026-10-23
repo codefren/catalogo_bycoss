@@ -87,9 +87,12 @@ una vez por cada almacén (`fldIdAlmacen`) que lo tenga.
 Campos devueltos: `sku`, `fldIdAlmacen`, `fldIdArticulo`, `articulo_descripcion`,
 `fldTemporada`, `fldIdFamilia`, `fldIdSexo`, `fldReferencia`, `codigo_barras`, `fldColeccion`,
 `fldIdMarca`, `fldIdColor`, `color_descripcion`, `fldIdGrupoTallas`,
-`grupotalla_descripcion`, `talla`, `pvp`, `precio_costo`, `stock_disponible`,
-`actualizado_en`. (No se exponen proveedor, parámetros de reposición ni totales
-de movimiento.)
+`grupotalla_descripcion`, `talla`, `pvp`, `precio_costo`, `total_transito`,
+`stock_disponible`, `actualizado_en`. (No se exponen proveedor, parámetros de
+reposición ni los demás totales de movimiento: entradas, salidas y servicio.)
+
+`total_transito` son las unidades **en tránsito** (pedidas al proveedor, aún no
+recibidas en el almacén).
 
 `precio_costo` es el coste unitario **actual** del SKU (no hay histórico): sirve
 para calcular márgenes, pero en periodos pasados es una aproximación si el coste

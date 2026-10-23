@@ -144,6 +144,7 @@ filas.
 | `talla` | string | Talla. |
 | `pvp` | number | Precio de venta al público (con IVA). |
 | `precio_costo` | number | Coste unitario **actual** (sin histórico; sin IVA). |
+| `total_transito` | number | Unidades **en tránsito** (pedidas, aún no recibidas en el almacén). |
 | `stock_disponible` | number | Stock disponible **en este almacén**. |
 | `actualizado_en` | datetime | Última actualización (sin zona horaria). |
 
