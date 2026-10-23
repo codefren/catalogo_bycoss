@@ -1,0 +1,38 @@
+meta {
+  name: Filtrar por sexo
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/skus?sexo=01&limit=50
+  body: none
+  auth: inherit
+}
+
+params:query {
+  sexo: 01
+  limit: 50
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("sobre paginado", function () {
+    expect(res.body.items).to.be.an("array");
+    expect(res.body.count).to.equal(res.body.items.length);
+    expect(res.body.count).to.be.at.most(res.body.limit);
+  });
+  test("respeta el filtro de sexo", function () {
+    for (const it of res.body.items) {
+      expect(it.fldIdSexo).to.equal("01");
+    }
+  });
+}
+
+docs {
+  Filtra por código de sexo (fldIdSexo). Solo hay código, sin descripción.
+  Se puede repetir para varios códigos (OR): ?sexo=01&sexo=02.
+  Cambia 01 por un código real de la base.
+}
