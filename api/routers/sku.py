@@ -51,6 +51,7 @@ SELECT
     talla,
     pvp,
     precio_costo,
+    total_transito,
     stock_disponible,
     actualizado_en
 FROM sku
