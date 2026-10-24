@@ -13,6 +13,7 @@ Arranque (transporte stdio, el estándar para clientes MCP):
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Annotated
 
@@ -279,5 +280,72 @@ async def estado_api() -> dict:
         return {"status": "error", "detalle": str(e)}
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  App HTTP para despliegue remoto (producción, detrás de Caddy)
+#
+#  Expone un ASGI `app` que sirve el MCP por Streamable HTTP en /mcp, con:
+#   - /healthz abierto (para el healthcheck de Docker).
+#   - Autenticación por token Bearer si MCP_API_KEY está definida.
+#
+#  Arranque en prod:   uvicorn server:app --host 0.0.0.0 --port 8000
+#  Arranque local:     python server.py   (stdio; lo lanza el cliente MCP)
+# ─────────────────────────────────────────────────────────────────────────────
+from starlette.responses import PlainTextResponse
+from starlette.routing import Route
+
+
+async def _healthz(request):
+    return PlainTextResponse("ok")
+
+
+class _AuthASGI:
+    """Middleware ASGI que exige 'Authorization: Bearer <MCP_API_KEY>'.
+
+    Si MCP_API_KEY no está definida, no exige nada (modo local). Deja pasar
+    siempre /healthz. Se implementa a nivel ASGI (no BaseHTTPMiddleware) para no
+    interferir con las respuestas en streaming del transporte Streamable HTTP.
+    """
+
+    def __init__(self, app, api_key: str | None) -> None:
+        self.app = app
+        self.api_key = api_key
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or not self.api_key:
+            await self.app(scope, receive, send)
+            return
+        if scope.get("path") == "/healthz":
+            await self.app(scope, receive, send)
+            return
+        headers = dict(scope.get("headers") or [])
+        auth = headers.get(b"authorization", b"").decode()
+        token = auth[7:] if auth[:7].lower() == "bearer " else ""
+        if token != self.api_key:
+            body = b'{"error": "no autorizado"}'
+            await send({
+                "type": "http.response.start",
+                "status": 401,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode()),
+                ],
+            })
+            await send({"type": "http.response.body", "body": body})
+            return
+        await self.app(scope, receive, send)
+
+
+def crear_app():
+    """App ASGI para uvicorn: MCP en /mcp + /healthz + auth por token."""
+    mcp_app = mcp.streamable_http_app()
+    mcp_app.router.routes.append(Route("/healthz", _healthz, methods=["GET"]))
+    return _AuthASGI(mcp_app, os.getenv("MCP_API_KEY"))
+
+
+# App ASGI que usa uvicorn en producción.
+app = crear_app()
+
+
 if __name__ == "__main__":
+    # Local: transporte stdio (lo lanza el cliente MCP, p. ej. Claude Desktop).
     mcp.run()

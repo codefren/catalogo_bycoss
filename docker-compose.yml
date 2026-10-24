@@ -92,6 +92,35 @@ services:
     # ports:
     #   - "8000:8000"
 
+  # ── Servidor MCP del catálogo (remoto, detrás de Caddy) ────────────────────
+  # Expone la API como herramientas MCP por Streamable HTTP en /mcp. Lo alcanza
+  # Caddy (red edge) y publica en https://mcp-bycos.data4tex.com/mcp.
+  mcp:
+    build:
+      context: ./mcp-catalogo
+      dockerfile: Dockerfile
+    image: databricks-catalog-mcp:local
+    container_name: databricks-catalog-mcp
+    env_file: .env
+    environment:
+      # Llama a la API por la red interna de Docker (no sale a internet).
+      CATALOGO_BASE_URL: "http://api:8000"
+      # Credenciales del usuario de la API (en .env): CATALOGO_USER / CATALOGO_PASSWORD.
+      # Token que el MCP exige a los clientes (en .env, obligatorio en prod):
+      MCP_API_KEY: "${MCP_API_KEY:?define MCP_API_KEY en .env}"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=5)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    # edge: Caddy la alcanza y, a la vez, llega a `api` (que también está en edge).
+    networks: [edge]
+
 volumes:
   catalogo-data:
 

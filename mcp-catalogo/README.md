@@ -60,32 +60,103 @@ python -c "import server; print('OK', [t for t in server.mcp._tool_manager.list_
 Para un arranque real, un cliente MCP lanza `python server.py` (transporte
 stdio) y se comunica por stdin/stdout.
 
-## Conectarlo a Claude Desktop
+El servidor funciona de **dos modos**, con el mismo código:
 
-Edita el archivo de configuración de Claude Desktop (en Windows):
+| Modo | Transporte | Cómo se arranca |
+|---|---|---|
+| **Local** | stdio | Lo lanza el cliente MCP (`python server.py`). |
+| **Remoto (prod)** | Streamable HTTP en `/mcp` | `uvicorn server:app` dentro de Docker, detrás de Caddy. |
 
-`%APPDATA%\Claude\claude_desktop_config.json`
+## Opción A — Local (stdio)
+
+Edita `%APPDATA%\Claude\claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "catalogo-bycoss": {
-      "command": "C:\\Users\\efarr\\OneDrive\\Proyectos\\databricks\\mcp-catalogo\\.venv\\Scripts\\python.exe",
+      "command": "C:\\Users\\efarr\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
       "args": ["C:\\Users\\efarr\\OneDrive\\Proyectos\\databricks\\mcp-catalogo\\server.py"]
     }
   }
 }
 ```
 
-(Las credenciales las toma del `.env` junto a `server.py`; si prefieres, puedes
-ponerlas en un bloque `"env": { ... }` aquí en vez del `.env`.)
+Las credenciales se toman del `.env` junto a `server.py`. Reinicia Claude
+Desktop y pregúntale algo de stock.
 
-Reinicia Claude Desktop y pregúntale, por ejemplo:
-*"¿Cuánto stock hay del artículo 0100228002 en la tienda 00000207?"* — debería
-llamar a `buscar_skus` y sumar el stock.
+## Opción B — Remoto, desplegado en producción
+
+El servidor corre como un contenedor más del `docker-compose.yml`, detrás de
+Caddy, en `https://mcp-bycos.data4tex.com/mcp`. Protegido con un **token**
+(`MCP_API_KEY`): sin él, `401`.
+
+### 1. Token y variables (en el `.env` de la RAÍZ del proyecto)
+
+```bash
+# genera un token
+openssl rand -hex 32
+```
+
+Añade al `.env` raíz (el que lee docker-compose):
+
+```
+MCP_API_KEY=<el-token-generado>
+```
+
+`CATALOGO_USER` y `CATALOGO_PASSWORD` ya están ahí; `CATALOGO_BASE_URL` lo fija
+el compose a `http://api:8000` (red interna).
+
+### 2. DNS
+
+Registro A: `mcp-bycos` → IP del servidor (`82.223.234.89`). ✅ (ya creado)
+
+### 3. Caddy
+
+En tu Caddyfile (Caddy debe estar en la red `edge`):
+
+```caddy
+mcp-bycos.data4tex.com {
+    reverse_proxy databricks-catalog-mcp:8000
+}
+```
+
+Recarga Caddy. El TLS lo gestiona Caddy automáticamente.
+
+### 4. Desplegar
+
+En el servidor:
+
+```bash
+docker compose up -d --build mcp
+docker compose logs -f mcp
+```
+
+### 5. Conectar Claude Desktop (al MCP remoto)
+
+Con el puente `mcp-remote` (requiere Node/`npx` en tu PC), en
+`claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "catalogo-bycoss": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote",
+        "https://mcp-bycos.data4tex.com/mcp",
+        "--header", "Authorization: Bearer EL_MCP_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+(Si tu versión de Claude Desktop soporta conectores remotos nativos, también
+puedes añadirlo desde Ajustes → Conectores con esa URL.)
 
 ## Siguiente paso
 
 En la **fase 2** este mismo servidor se conecta al agente **Hermes (Ollama)**
 del chat propio: un puente traduce estas herramientas MCP al formato de
-*function calling* que entiende Hermes.
+*function calling* que entiende Hermes. Da igual que el MCP sea local o remoto.
