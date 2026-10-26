@@ -1,0 +1,11 @@
+# Cadencias del ETL por tabla (las ejecuta supercronic en el servicio etl-cron).
+# La zona horaria es la del contenedor (TZ=Europe/Madrid en el compose).
+# Un lock en Postgres serializa las ejecuciones que coincidan en el mismo minuto.
+#
+# min  hora  dom  mes  dow   comando
+*/15   *     *    *    *     python /app/etl.py ticket_maestro
+*/15   *     *    *    *     python /app/etl.py stock_talla
+*/30   *     *    *    *     python /app/etl.py stock
+0      *     *    *    *     python /app/etl.py cajas_pendientes
+0      */2   *    *    *     python /app/etl.py sku
+0      3     *    *    *     python /app/etl.py compras_maestro

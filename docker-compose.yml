@@ -122,10 +122,12 @@ services:
     networks: [edge]
 
   # ── ETL: SQL Server (Arsys) -> Postgres (reemplazo del pipeline Databricks) ──
-  # Extrae de SQL Server, transforma en SQL y carga public.*. NO arranca con el
-  # stack normal: va tras el profile "etl" para no escribir en prod por sorpresa.
-  #   Una vez (dry-run, seguro):  docker compose run --rm etl sku --dry-run
-  #   Programado (cada hora):     docker compose --profile etl up -d etl
+  # Dos servicios, ambos tras el profile "etl" (no arrancan con el stack normal,
+  # para no escribir en prod por sorpresa):
+  #   - etl:      ejecución MANUAL puntual.
+  #       docker compose run --rm etl <tabla> [--dry-run]
+  #   - etl-cron: ejecución PROGRAMADA por cadencias (supercronic + etl/crontab).
+  #       docker compose --profile etl up -d --build etl-cron
   etl:
     build:
       context: ./etl
@@ -133,7 +135,7 @@ services:
     image: databricks-catalog-etl:local
     container_name: databricks-catalog-etl
     env_file: .env
-    environment:
+    environment: &etl-env
       # Postgres destino: por la red interna (servicio 'postgres', puerto 5432).
       PG_HOST: "postgres"
       PG_PORT: "5432"
@@ -146,16 +148,43 @@ services:
       SQLSERVER_DB: "${SQLSERVER_DB:-S4T_BYCOS}"
       SQLSERVER_USER: "${SQLSERVER_USER:?define SQLSERVER_USER en .env}"
       SQLSERVER_PASSWORD: "${SQLSERVER_PASSWORD:?define SQLSERVER_PASSWORD en .env}"
+      TDS_VERSION: "${TDS_VERSION:-7.0}"
+      TZ: "${TZ:-Europe/Madrid}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    # catalogo-net: llega a Postgres y tiene salida a internet (SQL Server Arsys).
+    networks: [catalogo-net]
+    profiles: ["etl"]
+    # Default seguro si se arranca con `up`: dry-run de sku. El uso normal es
+    # `docker compose run --rm etl <tabla> [--dry-run]`.
+    command: ["sku", "--dry-run"]
+
+  # Ejecución programada: supercronic corre etl/crontab con las cadencias
+  # (ticket_maestro y stock_talla 15 min, stock 30 min, cajas 1 h, sku 2 h,
+  # compras_maestro 1×/día de madrugada). Un lock en Postgres serializa las
+  # ejecuciones que coincidan en el mismo minuto.
+  etl-cron:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile
+    image: databricks-catalog-etl:local
+    container_name: databricks-catalog-etl-cron
+    env_file: .env
+    environment:
+      <<: *etl-env
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-    # catalogo-net: llega a Postgres y tiene salida a internet (SQL Server Arsys).
     networks: [catalogo-net]
     profiles: ["etl"]
-    # En modo servicio: bucle cada hora sobre TODAS las tablas registradas
-    # (sku, stock, stock_talla, compras_maestro, ticket_maestro, cajas_pendientes).
-    command: ["--loop", "--interval", "3600"]
+    # tini (init: true) recoge los procesos zombie de los jobs; supercronic con
+    # -no-reap no hace su propio reaping (que falla al re-ejecutarse como PID 1).
+    init: true
+    entrypoint: ["supercronic"]
+    command: ["-no-reap", "/app/crontab"]
 
 volumes:
   catalogo-data:

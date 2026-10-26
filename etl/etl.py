@@ -37,11 +37,21 @@ TABLES = {
 }
 
 
+# Lock global: serializa ejecuciones (varias tablas comparten tablas en `raw`,
+# p. ej. raw.stock lo usan sku/stock/stock_talla; sin esto, dos crons en el mismo
+# minuto se pisarían). Se libera solo al cerrar la conexión.
+ETL_LOCK_ID = 915273
+
+
 def run_table(mod, dry_run: bool) -> None:
     t0 = time.time()
     ms = mssql_conn()
     pg = pg_conn()
     try:
+        # 0. Lock: espera si hay otra ejecución en curso (evita pisar raw.*).
+        with pg.cursor() as c:
+            c.execute("SELECT pg_advisory_lock(%s)", (ETL_LOCK_ID,))
+
         # 1. Extracción de fuentes -> raw.*
         # Los passthrough conservan el case original de las columnas (PRESERVE_CASE).
         lower_case = not getattr(mod, "PRESERVE_CASE", False)

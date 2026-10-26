@@ -86,14 +86,27 @@ docker compose run --rm etl sku --dry-run
 docker compose run --rm etl sku
 ```
 
-**Programado (bucle cada hora, en segundo plano):**
+**Programado (cadencias por tabla, en segundo plano):**
 ```bash
-docker compose --profile etl up -d --build etl
-docker compose logs -f etl
+docker compose --profile etl up -d --build etl-cron
+docker compose logs -f etl-cron
 ```
 
-Cambia el intervalo o las tablas editando el `command` del servicio `etl` en
-`docker-compose.yml` (por defecto `--loop --interval 3600 sku`).
+El servicio `etl-cron` corre `supercronic` con `etl/crontab`. Cadencias actuales
+(zona horaria `TZ=Europe/Madrid`):
+
+| Tabla | Cadencia |
+|---|---|
+| `ticket_maestro` | cada 15 min |
+| `stock_talla` | cada 15 min |
+| `stock` | cada 30 min |
+| `cajas_pendientes` | cada hora |
+| `sku` | cada 2 horas |
+| `compras_maestro` | 1×/día (03:00) |
+
+Para cambiarlas, edita [`crontab`](crontab) y reconstruye (`--build etl-cron`).
+Un lock en Postgres (`pg_advisory_lock`) serializa las ejecuciones que coincidan
+en el mismo minuto, porque varias tablas comparten tablas de origen en `raw`.
 
 ## Añadir una tabla
 
