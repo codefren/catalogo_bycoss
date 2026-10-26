@@ -43,8 +43,10 @@ def run_table(mod, dry_run: bool) -> None:
     pg = pg_conn()
     try:
         # 1. Extracción de fuentes -> raw.*
+        # Los passthrough conservan el case original de las columnas (PRESERVE_CASE).
+        lower_case = not getattr(mod, "PRESERVE_CASE", False)
         for raw_name, source_sql in mod.SOURCES.items():
-            n = extract(ms, pg, raw_name, source_sql)
+            n = extract(ms, pg, raw_name, source_sql, lower_case=lower_case)
             print(f"  [extract] raw.{raw_name}: {n} filas")
 
         # 2a. Módulos con carga propia (incremental / passthrough): delegar.

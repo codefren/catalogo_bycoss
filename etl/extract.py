@@ -18,14 +18,19 @@ import io
 BATCH = 50_000
 
 
-def extract(mssql, pg, raw_name: str, source_sql: str) -> int:
+def extract(mssql, pg, raw_name: str, source_sql: str, lower_case: bool = True) -> int:
     """Copia el resultado de `source_sql` (SQL Server) a raw.<raw_name> (Postgres).
+
+    Por defecto pasa los nombres de columna a minúscula (las transformaciones los
+    referencian así). `lower_case=False` conserva el case original: necesario para
+    los passthrough (p. ej. cajas_pendientes), donde la tabla destino debe tener
+    los mismos nombres que la vista para que la API los encuentre.
 
     Devuelve el número de filas cargadas.
     """
     cur = mssql.cursor()
     cur.execute(source_sql)
-    cols = [d[0].lower() for d in cur.description]
+    cols = [(d[0].lower() if lower_case else d[0]) for d in cur.description]
 
     with pg.cursor() as pcur:
         pcur.execute("CREATE SCHEMA IF NOT EXISTS raw")

@@ -3,29 +3,32 @@ dbo.vw_Cajas_Pendientes. Porta bycos_pg_exports/cajas_pendientes.py.
 Modo: passthrough (sin transformación): se copia la vista tal cual, deduplicada
 por PK, y se sobreescribe.
 
-Como no hay transformación, la tabla destino se crea con LAS MISMAS columnas que
-devuelva la vista (igual que hacía el overwrite de Spark), más actualizado_en.
-Las columnas exactas se confirman al correr contra el SQL Server real.
+IMPORTANTE: se conserva el case ORIGINAL de las columnas de la vista
+(PascalCase, p. ej. "DispathNote", "CodCliente", "Descri_Art"), porque la API
+(api/routers/cajas.py) las lee con esos nombres exactos y las renombra a
+snake_case con AS. Por eso PRESERVE_CASE = True.
 """
 from __future__ import annotations
+
+# No pasar a minúscula los nombres de columna al extraer (los necesita la API).
+PRESERVE_CASE = True
 
 SOURCES = {
     "cajas_pendientes": "SELECT * FROM dbo.vw_Cajas_Pendientes",
 }
 
 TARGET = "public.cajas_pendientes"
-# PK de la vista (nombres tal cual los devuelve; en raw van en minúscula).
+# PK de la vista, en su case original (tal cual la devuelve la vista).
 KEYS = ["DispathNote", "NoBulto", "Articulo", "Color", "Talla"]
 
 
 def load(pg, dry_run: bool) -> None:
-    """Crea public.cajas_pendientes con las columnas de la vista + actualizado_en,
-    deduplica por PK y sobreescribe."""
-    keys_lower = [k.lower() for k in KEYS]
-    order = ", ".join(keys_lower)
+    """Crea public.cajas_pendientes con las columnas de la vista (case original)
+    + actualizado_en, deduplica por PK y sobreescribe."""
+    order = ", ".join(f'"{k}"' for k in KEYS)
 
     with pg.cursor() as c:
-        # Columnas reales cargadas en raw (= columnas de la vista, en minúscula).
+        # Columnas reales cargadas en raw (= columnas de la vista, case original).
         c.execute(
             "SELECT column_name FROM information_schema.columns "
             "WHERE table_schema='raw' AND table_name='cajas_pendientes' "
@@ -35,7 +38,7 @@ def load(pg, dry_run: bool) -> None:
         if not raw_cols:
             raise RuntimeError("raw.cajas_pendientes no tiene columnas (¿falló la extracción?)")
 
-        faltan = [k for k in keys_lower if k not in raw_cols]
+        faltan = [k for k in KEYS if k not in raw_cols]
         if faltan:
             raise RuntimeError(
                 f"La vista no trae las columnas clave {faltan}. "
@@ -53,7 +56,7 @@ def load(pg, dry_run: bool) -> None:
             print(f"  [dry-run] NO se escribió {TARGET}")
             return
 
-        # Tabla destino = columnas de la vista (text) + actualizado_en.
+        # Tabla destino = columnas de la vista (text, case original) + actualizado_en.
         coldefs = ", ".join(f'"{col}" text' for col in raw_cols)
         c.execute(f"CREATE TABLE IF NOT EXISTS {TARGET} ({coldefs}, "
                   f"actualizado_en timestamp without time zone)")
