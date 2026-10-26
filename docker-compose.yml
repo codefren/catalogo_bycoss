@@ -121,6 +121,41 @@ services:
     # edge: Caddy la alcanza y, a la vez, llega a `api` (que también está en edge).
     networks: [edge]
 
+  # ── ETL: SQL Server (Arsys) -> Postgres (reemplazo del pipeline Databricks) ──
+  # Extrae de SQL Server, transforma en SQL y carga public.*. NO arranca con el
+  # stack normal: va tras el profile "etl" para no escribir en prod por sorpresa.
+  #   Una vez (dry-run, seguro):  docker compose run --rm etl sku --dry-run
+  #   Programado (cada hora):     docker compose --profile etl up -d etl
+  etl:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile
+    image: databricks-catalog-etl:local
+    container_name: databricks-catalog-etl
+    env_file: .env
+    environment:
+      # Postgres destino: por la red interna (servicio 'postgres', puerto 5432).
+      PG_HOST: "postgres"
+      PG_PORT: "5432"
+      PG_DATABASE: "${POSTGRES_DB:-catalogo}"
+      PG_USER: "${POSTGRES_USER:-catalogo}"
+      PG_PASSWORD: "${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}"
+      # SQL Server origen (Arsys): definir en .env.
+      SQLSERVER_HOST: "${SQLSERVER_HOST:?define SQLSERVER_HOST en .env}"
+      SQLSERVER_PORT: "${SQLSERVER_PORT:-4313}"
+      SQLSERVER_DB: "${SQLSERVER_DB:-S4T_BYCOS}"
+      SQLSERVER_USER: "${SQLSERVER_USER:?define SQLSERVER_USER en .env}"
+      SQLSERVER_PASSWORD: "${SQLSERVER_PASSWORD:?define SQLSERVER_PASSWORD en .env}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    # catalogo-net: llega a Postgres y tiene salida a internet (SQL Server Arsys).
+    networks: [catalogo-net]
+    profiles: ["etl"]
+    # En modo servicio: bucle cada hora sobre las tablas portadas (hoy, sku).
+    command: ["--loop", "--interval", "3600", "sku"]
+
 volumes:
   catalogo-data:
 
