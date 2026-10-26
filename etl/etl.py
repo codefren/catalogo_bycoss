@@ -17,11 +17,23 @@ import time
 
 from db import mssql_conn, pg_conn
 from extract import extract
-from tables import sku as sku_table
+from tables import (
+    cajas_pendientes,
+    compras_maestro,
+    sku,
+    stock,
+    stock_talla,
+    ticket_maestro,
+)
 
-# Registro de tablas. Se irán añadiendo stock, compras_maestro, etc.
+# Registro de tablas (orden de ejecución por defecto).
 TABLES = {
-    "sku": sku_table,
+    "sku": sku,
+    "stock": stock,
+    "stock_talla": stock_talla,
+    "compras_maestro": compras_maestro,
+    "ticket_maestro": ticket_maestro,
+    "cajas_pendientes": cajas_pendientes,
 }
 
 
@@ -35,7 +47,13 @@ def run_table(mod, dry_run: bool) -> None:
             n = extract(ms, pg, raw_name, source_sql)
             print(f"  [extract] raw.{raw_name}: {n} filas")
 
-        # 2. Tabla destino (no-op si ya existe)
+        # 2a. Módulos con carga propia (incremental / passthrough): delegar.
+        if hasattr(mod, "load"):
+            mod.load(pg, dry_run)
+            print(f"  [ok] {mod.TARGET} ({time.time()-t0:.1f}s)")
+            return
+
+        # 2b. Overwrite genérico (tabla destino, no-op si ya existe)
         with pg.cursor() as c:
             c.execute(mod.TARGET_DDL)
         pg.commit()

@@ -153,8 +153,9 @@ services:
     # catalogo-net: llega a Postgres y tiene salida a internet (SQL Server Arsys).
     networks: [catalogo-net]
     profiles: ["etl"]
-    # En modo servicio: bucle cada hora sobre las tablas portadas (hoy, sku).
-    command: ["--loop", "--interval", "3600", "sku"]
+    # En modo servicio: bucle cada hora sobre TODAS las tablas registradas
+    # (sku, stock, stock_talla, compras_maestro, ticket_maestro, cajas_pendientes).
+    command: ["--loop", "--interval", "3600"]
 
 volumes:
   catalogo-data:

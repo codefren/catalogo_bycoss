@@ -9,12 +9,16 @@ Porta los jobs `bycos_pg_exports/*.py` de Databricks, uno por tabla.
 
 ## Estado
 
-- [x] `sku` → `public.sku` (overwrite espejo) — **fase 1, en construcción/validación**
-- [ ] `stock` → `public.stock`
-- [ ] `stock_talla` → `public.stock_talla`
-- [ ] `compras_maestro` → `public.compras_maestro`
-- [ ] `ticket_maestro` → `public.ticket_maestro` (incremental)
-- [ ] `cajas_pendientes` → `public.cajas_pendientes`
+Las 6 tablas están portadas y **validadas con datos sintéticos** (en un Postgres
+de prueba, sin SQL Server). Falta la prueba real contra Arsys (mejor en el
+servidor).
+
+- [x] `sku` → `public.sku` (overwrite espejo)
+- [x] `stock` → `public.stock` (overwrite, solo filas con movimiento)
+- [x] `stock_talla` → `public.stock_talla` (overwrite)
+- [x] `compras_maestro` → `public.compras_maestro` (overwrite)
+- [x] `ticket_maestro` → `public.ticket_maestro` (incremental: ventana 3d + anti-join 4d)
+- [x] `cajas_pendientes` → `public.cajas_pendientes` (passthrough de la vista)
 
 ## Cómo funciona
 
