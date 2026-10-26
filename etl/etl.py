@@ -15,6 +15,7 @@ import argparse
 import sys
 import time
 
+from common import ACTUALIZADO_EN
 from db import mssql_conn, pg_conn
 from extract import extract
 from tables import (
@@ -89,7 +90,7 @@ def run_table(mod, dry_run: bool) -> None:
             c.execute(f"TRUNCATE {mod.TARGET}")
             c.execute(
                 f'INSERT INTO {mod.TARGET} ({cols}, "actualizado_en") '
-                f"SELECT *, now() FROM ({select_sql}) q"
+                f"SELECT *, {ACTUALIZADO_EN} FROM ({select_sql}) q"
             )
             n = c.rowcount
         pg.commit()

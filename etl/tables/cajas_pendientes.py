@@ -10,6 +10,8 @@ snake_case con AS. Por eso PRESERVE_CASE = True.
 """
 from __future__ import annotations
 
+from common import ACTUALIZADO_EN
+
 # No pasar a minúscula los nombres de columna al extraer (los necesita la API).
 PRESERVE_CASE = True
 
@@ -64,7 +66,7 @@ def load(pg, dry_run: bool) -> None:
         collist = ", ".join(f'"{col}"' for col in raw_cols)
         c.execute(
             f'INSERT INTO {TARGET} ({collist}, actualizado_en) '
-            f"SELECT {collist}, now() FROM ({dedup}) q"
+            f"SELECT {collist}, {ACTUALIZADO_EN} FROM ({dedup}) q"
         )
         n = c.rowcount
     pg.commit()

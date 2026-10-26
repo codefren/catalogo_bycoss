@@ -8,6 +8,8 @@ lineas viejas corregidas/anuladas no se propagan (haría falta reconciliación).
 """
 from __future__ import annotations
 
+from common import ACTUALIZADO_EN
+
 JDBC_DAYS = 5      # margen de lectura en SQL Server
 WINDOW_DAYS = 3    # ventana que se entrega al load
 ANTIJOIN_DAYS = 4  # margen del anti-duplicados en Postgres
@@ -159,7 +161,7 @@ def load(pg, dry_run: bool) -> None:
             return
         c.execute(
             f'INSERT INTO {TARGET} ({cols}, "actualizado_en") '
-            f"SELECT *, now() FROM ({inner}) q WHERE {where_new}"
+            f"SELECT *, {ACTUALIZADO_EN} FROM ({inner}) q WHERE {where_new}"
         )
         n = c.rowcount
     pg.commit()
