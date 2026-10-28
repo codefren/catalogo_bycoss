@@ -504,3 +504,59 @@ class CajasPendientesPage(BaseModel):
     count: int = Field(..., description="Nº de filas devueltas en esta página.")
     limit: int = Field(..., description="Tamaño de página solicitado.")
     offset: int = Field(..., description="Desplazamiento solicitado.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  TRASPASOS — movimientos entre almacenes. Grano: un traspaso (cabecera) con
+#  sus líneas (sku + cantidad) anidadas.
+# ─────────────────────────────────────────────────────────────────────────────
+class TraspasoLinea(BaseModel):
+    """Una línea de traspaso: SKU y cantidad movida."""
+
+    sku: str | None = Field(None, description="SKU movido (artículo-color-talla).")
+    cantidad: float | None = Field(None, description="Unidades de esta línea.")
+
+
+_TRASPASO_EXAMPLE = {
+    "traspaso": "0000026594",
+    "origen": "00000001",
+    "origen_descripcion": "CENTRAL BYCOS",
+    "destino": "00000204",
+    "destino_descripcion": "TIENDA XY",
+    "fecha": "2025-07-14",
+    "tipo": "Tras",
+    "lineas": [
+        {"sku": "12096274-176527-28", "cantidad": 1},
+        {"sku": "12098448-177083-L", "cantidad": 2},
+    ],
+}
+
+
+class TraspasoOut(BaseModel):
+    """Un traspaso completo: cabecera (origen, destino, fecha, tipo) + líneas."""
+
+    model_config = ConfigDict(json_schema_extra={"example": _TRASPASO_EXAMPLE})
+
+    traspaso: str | None = Field(None, description="Nº de traspaso (fldIdTraspaso).")
+    origen: str | None = Field(None, description="Almacén de origen (fldIdOrigen).")
+    origen_descripcion: str | None = Field(None, description="Nombre del almacén de origen.")
+    destino: str | None = Field(None, description="Almacén de destino (fldIdDestino).")
+    destino_descripcion: str | None = Field(None, description="Nombre del almacén de destino.")
+    fecha: date | None = Field(None, description="Fecha del traspaso.")
+    tipo: str | None = Field(None, description="Tipo de traspaso (fldTipo).")
+    lineas: list[TraspasoLinea] = Field(default_factory=list, description="Líneas del traspaso (sku + cantidad).")
+
+
+class TraspasoPage(BaseModel):
+    """Página de traspasos (una entrada por traspaso, con sus líneas)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"items": [_TRASPASO_EXAMPLE], "count": 1, "limit": 50, "offset": 0}
+        }
+    )
+
+    items: list[TraspasoOut]
+    count: int = Field(..., description="Nº de traspasos devueltos en esta página.")
+    limit: int = Field(..., description="Tamaño de página solicitado.")
+    offset: int = Field(..., description="Desplazamiento solicitado.")

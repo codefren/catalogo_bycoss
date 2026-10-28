@@ -7,5 +7,6 @@
 */15   *     *    *    *     python /app/etl.py stock_talla
 */30   *     *    *    *     python /app/etl.py stock
 0      *     *    *    *     python /app/etl.py cajas_pendientes
+20,50  *     *    *    *     python /app/etl.py traspasos
 0      */2   *    *    *     python /app/etl.py sku
 0      3     *    *    *     python /app/etl.py compras_maestro

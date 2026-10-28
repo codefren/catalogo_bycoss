@@ -25,6 +25,7 @@ from tables import (
     stock,
     stock_talla,
     ticket_maestro,
+    traspasos,
 )
 
 # Registro de tablas (orden de ejecución por defecto).
@@ -35,6 +36,7 @@ TABLES = {
     "compras_maestro": compras_maestro,
     "ticket_maestro": ticket_maestro,
     "cajas_pendientes": cajas_pendientes,
+    "traspasos": traspasos,
 }
 
 

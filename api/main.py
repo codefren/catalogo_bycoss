@@ -36,6 +36,7 @@ from routers import cajas as cajas_router
 from routers import compras as compras_router
 from routers import sku as sku_router
 from routers import stock as stock_router
+from routers import traspasos as traspasos_router
 from routers import ventas as ventas_router
 from schemas import RefreshIn, TokenOut
 from security import (
@@ -88,6 +89,7 @@ tags_metadata = [
     {"name": "Ventas — líneas de ticket", "description": "Líneas de venta (tabla `ticket_maestro`); una fila por línea de ticket. Incluye también las **cabeceras** (`/api/ventas/cabeceras`), que agregan los totales de cada ticket en una sola fila."},
     {"name": "Compras — líneas de compra", "description": "Líneas de compra a proveedor (tabla `compras_maestro`); una fila por artículo-color-talla comprado."},
     {"name": "Cajas pendientes", "description": "Líneas de cajas/envíos pendientes de llegada a tienda (tabla `cajas_pendientes`); claves normalizadas a snake_case."},
+    {"name": "Traspasos", "description": "Traspasos entre tiendas (tabla `traspasos`): cada traspaso con su cabecera (origen, destino, fecha, tipo) y sus líneas (sku + cantidad) anidadas."},
     {"name": "Documentación", "description": "Contexto completo de la API en Markdown, listo para dárselo a un asistente (Claude u otro LLM)."},
     {"name": "Infra", "description": "Salud del servicio."},
 ]
@@ -241,3 +243,4 @@ app.include_router(stock_router.router)
 app.include_router(ventas_router.router)
 app.include_router(compras_router.router)
 app.include_router(cajas_router.router)
+app.include_router(traspasos_router.router)
