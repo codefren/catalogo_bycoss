@@ -8,7 +8,7 @@
 ## 1. Qué es
 
 API HTTP **de solo lectura** (solo `GET` sobre datos) del catálogo de una cadena
-de tiendas de moda. Expone cinco conjuntos de datos que vienen del ERP:
+de tiendas de moda. Expone seis conjuntos de datos que vienen del ERP:
 
 | Recurso | Ruta base | Tabla | Grano (qué es una fila) |
 |---|---|---|---|
@@ -19,6 +19,7 @@ de tiendas de moda. Expone cinco conjuntos de datos que vienen del ERP:
 | Ventas (cabeceras) | `/api/ventas/cabeceras` | `ticket_maestro` agregada | Un **ticket** con sus totales |
 | Compras | `/api/compras` | `compras_maestro` | Un artículo-color-talla comprado a un proveedor |
 | Cajas pendientes | `/api/cajas-pendientes` | `cajas_pendientes` | Un artículo-color-talla dentro de una caja en tránsito a tienda |
+| Traspasos | `/api/traspasos` | `traspasos` | Un **traspaso** entre tiendas: cabecera (origen, destino, fecha) con sus **líneas** (sku + cantidad) anidadas |
 
 - Base URL de producción: `https://bycos.data4tex.com`
 - Formato: JSON (UTF-8). Nombres de campo en español; muchos con prefijo `fld`
@@ -113,6 +114,11 @@ Claves comunes entre recursos (son texto, compáralas tal cual):
 - La **descripción del almacén** solo está en `stock` (`almacen_descripcion`).
   Para el nombre de un `fldIdAlmacen` de cualquier recurso, usa
   `GET /api/stock/almacenes`.
+- Un **traspaso** mueve mercancía de una tienda (`origen`) a otra (`destino`);
+  ambos son `fldIdAlmacen`. Traspasos **ya trae** el nombre de origen y destino
+  (`origen_descripcion`, `destino_descripcion`), y cada línea lleva el `sku`
+  (`<articulo>-<color>-<talla>`) que cruza con `/api/skus`. Solo hay traspasos
+  **entre tiendas** (origen y destino entre `00000001` y `00000220`).
 
 ## 5. Endpoints
 
@@ -311,6 +317,64 @@ línea).
 
 Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si no hay.
 
+### 5.12 Traspasos — `GET /api/traspasos`
+
+Movimientos de mercancía **entre tiendas**. A diferencia del resto de listados,
+cada elemento es un **traspaso anidado**: la cabecera (origen, destino con sus
+nombres, fecha, tipo) y, dentro, sus **líneas** (`sku` + `cantidad`). Es decir,
+`items[]` **no** son filas planas: cada `item` ya agrupa todas sus líneas. Orden:
+fecha desc, nº de traspaso.
+
+Solo aparecen traspasos con **origen y destino entre `00000001` y `00000220`**
+(entre tiendas); el ETL ya filtra el resto.
+
+**Forma de cada `item`**:
+
+```json
+{
+  "traspaso": "0000026594",
+  "origen": "00000001",
+  "origen_descripcion": "CENTRAL BYCOS",
+  "destino": "00000204",
+  "destino_descripcion": "TIENDA XY",
+  "fecha": "2025-07-14",
+  "tipo": "Tras",
+  "lineas": [
+    {"sku": "12096274-176527-28", "cantidad": 1},
+    {"sku": "12098448-177083-L", "cantidad": 2}
+  ]
+}
+```
+
+**Campos**:
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `traspaso` | string | Nº de traspaso (`fldIdTraspaso`). |
+| `origen` | string | Almacén de origen (`fldIdOrigen`). |
+| `origen_descripcion` | string | Nombre del almacén de origen. |
+| `destino` | string | Almacén de destino (`fldIdDestino`). |
+| `destino_descripcion` | string | Nombre del almacén de destino. |
+| `fecha` | date | Fecha del traspaso. |
+| `tipo` | string | Tipo de traspaso (`fldTipo`). |
+| `lineas` | array | Líneas del traspaso. Cada una: `sku` (string) y `cantidad` (number). |
+
+**Filtros** (todos opcionales, un solo valor cada uno, combinados con AND):
+
+| Parámetro | Columna | Notas |
+|---|---|---|
+| `fecha_desde` | `fecha` | **`YYYY-MM-DD`** (p. ej. `2026-10-27`), inclusivo. |
+| `fecha_hasta` | `fecha` | `YYYY-MM-DD`, inclusivo. |
+| `origen` | `fldIdOrigen` | Tienda de origen (máx. 50). |
+| `destino` | `fldIdDestino` | Tienda de destino (máx. 50). |
+| `traspaso` | `fldIdTraspaso` | Nº de traspaso exacto (máx. 50). |
+| `limit`, `offset` | — | Paginación (cuenta **traspasos**, no líneas). |
+
+### 5.13 Traspasos — `GET /api/traspasos/{traspaso}`
+
+Un traspaso concreto por su nº, con sus líneas. **Devuelve un objeto suelto** (no
+sobre paginado) con los campos de 5.12. `404` si no existe.
+
 ## 6. Recetas para preguntas habituales
 
 | Pregunta | Cómo |
@@ -326,6 +390,8 @@ Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si 
 | ¿Qué se compró a un proveedor? | `GET /api/compras?proveedor=P&fecha_desde=…` |
 | ¿Qué le llega a una tienda? | `GET /api/cajas-pendientes?tienda=T&limit=500`; agrupa por `codigo_caja`. |
 | ¿Viene en camino un producto? | `GET /api/cajas-pendientes?ean=EAN` (o `articulo=X`). |
+| ¿Qué traspasos salieron/entraron de una tienda? | `GET /api/traspasos?origen=T` (o `destino=T`) `&fecha_desde=…`; cada item trae sus `lineas`. |
+| ¿Qué movió un traspaso concreto? | `GET /api/traspasos/{traspaso}` → lee `lineas` (sku + cantidad). |
 | ¿Margen de un periodo? | Líneas de `/api/ventas` + `precio_costo` de `/api/skus` (cruza por almacén, artículo, color y talla; en ventas `fldTalla`). Venta sin IVA = `importe_linea / (1 + fldIVA/100)`; coste = `fldCantidad × precio_costo`; margen = venta sin IVA − coste. El coste es el actual: en periodos antiguos es aproximado. |
 | ¿Qué cambió en el catálogo desde ayer? | `GET /api/skus?actualizado_desde=<ISO>&orden=actualizado&limit=500`, paginando. |
 
@@ -349,6 +415,9 @@ Todas las líneas de una caja, ordenadas por artículo, color y talla. `404` si 
    `con_stock=true` solo deja stock > 0.
 10. **Hay almacenes sin descripción** (`almacen_descripcion: null`): no
     inventes el nombre, muestra el `fldIdAlmacen`.
+11. **Traspasos viene anidado**: cada `item` de `/api/traspasos` es un traspaso
+    con sus `lineas` dentro; no es una fila por línea. Para unidades movidas suma
+    `cantidad` de `lineas`. La paginación cuenta traspasos, no líneas.
 
 ## 8. Ejemplo completo (Python)
 
