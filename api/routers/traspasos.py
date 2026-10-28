@@ -8,6 +8,7 @@ La tabla `traspasos` ya viene filtrada por el ETL a traspasos con origen Y
 destino entre 00000001 y 00000220 (entre tiendas). Consultas parametrizadas.
 """
 import json
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import text
@@ -74,8 +75,8 @@ async def list_traspasos(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Tamaño de página (nº de traspasos)."),
     offset: int = Query(0, ge=0, description="Desplazamiento."),
-    fecha_desde: str | None = Query(None, description="Fecha inicial inclusive (YYYY-MM-DD)."),
-    fecha_hasta: str | None = Query(None, description="Fecha final inclusive (YYYY-MM-DD)."),
+    fecha_desde: date | None = Query(None, description="Fecha inicial inclusive (YYYY-MM-DD)."),
+    fecha_hasta: date | None = Query(None, description="Fecha final inclusive (YYYY-MM-DD)."),
     origen: str | None = Query(None, max_length=50, description="Filtra por almacén de origen (fldIdOrigen)."),
     destino: str | None = Query(None, max_length=50, description="Filtra por almacén de destino (fldIdDestino)."),
     traspaso: str | None = Query(None, max_length=50, description="Filtra por nº de traspaso (fldIdTraspaso)."),
