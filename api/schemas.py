@@ -175,7 +175,7 @@ class SkuOut(BaseModel):
     fldIdFamilia: str | None = Field(None, description="Código de familia.")
     fldIdSexo: str | None = Field(None, description="Código de sexo (solo código; no hay tabla de descripciones).")
     fldReferencia: str | None = Field(None, description="Referencia del proveedor/fabricante.")
-    codigo_barras: str | None = Field(None, description="Código de barras (EAN) del SKU.")
+    codigo_barras: str | None = Field(None, description="Código de barras (EAN) de la talla concreta (de AECOC); si esa talla no tiene EAN, el del artículo.")
     fldColeccion: str | None = Field(None, description="Colección.")
     fldIdMarca: str | None = Field(None, description="Código de marca.")
     fldIdColor: str | None = Field(None, description="Código de color.")

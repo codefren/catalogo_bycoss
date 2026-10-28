@@ -40,6 +40,9 @@ SOURCES = {
     "colores":        "SELECT fldIdColor, fldDescripcion FROM dbo.tbdColores",
     "grupotalla":     f"SELECT {', '.join(_GT_COLS)} FROM dbo.tbdGruposTallas",
     "articulo_tarifa": f"SELECT {', '.join(_AT_COLS)} FROM dbo.tbdArticulosTarifas",
+    # Código de barras (EAN) por talla concreta (más preciso que el de artículo).
+    "articulo_barras": "SELECT fldIdArticulo, fldIdColor, fldIdTalla, fldIdCodigo "
+                       "FROM dbo.tbdArticulosBarrasAECOC",
 }
 
 # ── Esquema destino (coincide con el public.sku que ya sirve la API) ──────────
@@ -175,6 +178,14 @@ precios AS (
     JOIN gt_long gt ON a1.fldidgrupotallas = gt.fldidgrupotallas
                    AND tar.posicion = gt.posicion
     GROUP BY tar.fldidarticulo, gt.talla
+),
+barras AS (
+    -- EAN por talla concreta (AECOC). Puede haber varios por clave: se toma uno.
+    SELECT fldidarticulo, fldidcolor, fldidtalla,
+           MIN(fldidcodigo) AS codigo_barras
+    FROM raw.articulo_barras
+    WHERE fldidcodigo IS NOT NULL AND btrim(fldidcodigo) <> ''
+    GROUP BY fldidarticulo, fldidcolor, fldidtalla
 )
 SELECT
     CONCAT_WS('-', s.fldidalmacen, s.fldidarticulo, s.fldidcolor, s.talla) AS sku,
@@ -185,7 +196,7 @@ SELECT
     a1.fldidfamilia,
     a1.fldidproveedor,
     a1.fldreferencia,
-    a1.fldidcodigobarras AS codigo_barras,
+    COALESCE(b.codigo_barras, a1.fldidcodigobarras) AS codigo_barras,
     a1.fldcoleccion,
     {_num('a1.fldminimostock')} AS "fldMinimoStock",
     {_num('a1.fldmaximostock')} AS "fldMaximoStock",
@@ -212,4 +223,7 @@ FROM articulo_color_talla_stock s
 LEFT JOIN raw.articulo1 a1 ON s.fldidarticulo = a1.fldidarticulo
 LEFT JOIN raw.articulo5 a5 ON s.fldidarticulo = a5.fldidarticulo
 LEFT JOIN precios p ON s.fldidarticulo = p.fldidarticulo AND s.talla = p.talla
+LEFT JOIN barras b ON s.fldidarticulo = b.fldidarticulo
+                  AND s.fldidcolor = b.fldidcolor
+                  AND s.talla = b.fldidtalla
 """

@@ -134,7 +134,7 @@ filas.
 | `fldIdFamilia` | string | Código de familia. |
 | `fldIdSexo` | string | Código de sexo (solo código, sin descripción). |
 | `fldReferencia` | string | Referencia del proveedor/fabricante. |
-| `codigo_barras` | string | EAN del SKU. |
+| `codigo_barras` | string | EAN de la **talla concreta** (AECOC); si esa talla no tiene EAN, el del artículo. |
 | `fldColeccion` | string | Colección. |
 | `fldIdMarca` | string | Código de marca. |
 | `fldIdColor` | string | Código de color. |
